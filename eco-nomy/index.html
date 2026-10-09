@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente Strategico GdF - Analisi Giuridico-Operativa</title>
+    <!-- Icone del sito, del telefono e manifest (cartella icona/) -->
+    <link rel="icon" href="icona/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="32x32" href="icona/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icona/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icona/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0B2341">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="eco-nomy">
+    <meta name="msapplication-TileColor" content="#0B2341">
+    <meta name="msapplication-TileImage" content="icona/mstile-150x150.png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js per il parsing del Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gdf: {
+                            blue: '#0B2341',
+                            gold: '#D4AF37',
+                            lightbg: '#F4F6F9',
+                            gray: '#1E293B',
+                            accent: '#1E3A8A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+            .print-container { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .shadow-lg, .shadow-md { box-shadow: none !important; }
+        }
+        .prose h1 { font-size: 1.5rem; font-weight: bold; color: #0B2341; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #D4AF37; padding-bottom: 0.25rem; }
+        .prose h2 { font-size: 1.25rem; font-weight: bold; color: #1E3A8A; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+        .prose h3 { font-size: 1.1rem; font-weight: bold; color: #334155; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+        .prose th { background-color: #0B2341; color: white; padding: 0.5rem; text-align: left; border: 1px solid #cbd5e1; }
+        .prose td { border: 1px solid #cbd5e1; padding: 0.5rem; }
+        .prose tr:nth-child(even) { background-color: #f8fafc; }
+        .prose blockquote { border-left: 4px solid #D4AF37; padding-left: 1rem; color: #475569; font-style: italic; margin: 1rem 0; }
+    </style>
+</head>
+<body class="bg-gdf-lightbg text-slate-800 min-h-screen font-sans flex flex-col">
+
+    <!-- Header Istituzionale -->
+    <header class="bg-gdf-blue text-white shadow-md border-b-4 border-gdf-gold no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <img src="data:image/png;base64,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" alt="Logo Assistente Strategico GdF" class="w-14 h-14 rounded-xl shadow">
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Assistente Strategico & Analista Giuridico-Operativo</h1>
+                    <p class="text-xs text-slate-300">Diritto Penale Economico, Tributario e Tecniche di Polizia Giudiziaria</p>
+                </div>
+            </div>
+            
+            <!-- Configurazione API Key -->
+            <div class="flex items-center space-x-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
+                <i class="fa-solid fa-key text-gdf-gold text-sm"></i>
+                <input type="password" id="apiKeyInput" placeholder="Inserisci API Key Google Gemini..." 
+                       class="bg-slate-900 text-white text-xs px-2 py-1.5 rounded border border-slate-600 focus:outline-none focus:border-gdf-gold w-48 sm:w-64">
+                <button onclick="saveApiKey()" class="bg-gdf-gold hover:bg-yellow-600 text-gdf-blue font-bold text-xs px-3 py-1.5 rounded transition">
+                    Salva
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Avvertenze sull'uso -->
+    <div id="usageNotice" class="no-print bg-amber-50 border-b-2 border-amber-400 text-amber-900">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-start gap-3 text-xs leading-relaxed">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base mt-0.5"></i>
+            <div class="flex-1">
+                <p><strong>Avvertenze sull'uso.</strong> Non caricare né incollare <strong>documenti riservati, atti coperti da segreto o dati identificativi di persone e procedimenti reali</strong>. Inserisci solo casi pratici, generici o anonimizzati.</p>
+                <p class="mt-1">Il testo e gli allegati vengono inviati ai server di Google (API Gemini) per essere elaborati: <strong>questa applicazione non lavora in locale sui contenuti</strong>. Per materiale riservato utilizza esclusivamente strumenti istituzionali autorizzati, che operano in locale o in ambienti protetti, oppure anonimizza il contenuto prima di inserirlo.</p>
+            </div>
+            <button onclick="document.getElementById('usageNotice').classList.add('hidden')" title="Nascondi (ricompare al prossimo caricamento)" class="text-amber-700 hover:text-amber-900 px-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Pannello Input Operatore (Sinistra) -->
+        <section class="lg:col-span-5 bg-white p-5 rounded-xl shadow-md border border-slate-200 flex flex-col no-print">
+            <h2 class="text-lg font-bold text-gdf-blue mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-folder-open text-gdf-gold"></i>
+                Quadro Fattuale e Allegati
+            </h2>
+            <p class="text-xs text-slate-500 mb-4">
+                Inserisci gli elementi dell'indagine e/o carica un documento (PDF, TXT, Immagini). <strong>Assicurati che i dati siano preventivamente anonimizzati.</strong>
+            </p>
+
+            <!-- Selezione Modello -->
+            <div class="mb-4">
+                <label for="modelSelect" class="block text-xs font-semibold text-slate-700 mb-1">Modello IA:</label>
+                <select id="modelSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2 focus:ring-gdf-blue focus:border-gdf-blue">
+                    <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
+                    
+                </select>
+            </div>
+
+            <!-- Caricamento File / Allegato -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Carica Allegato (PDF, TXT, Immagine):</label>
+                <p class="text-[11px] text-red-600 font-semibold mb-1.5"><i class="fa-solid fa-ban mr-1"></i>Non caricare documenti riservati o coperti da segreto.</p>
+                <div class="flex items-center justify-center w-full">
+                    <label for="fileInput" class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
+                        <div class="flex flex-col items-center justify-center pt-2 pb-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-xl mb-1"></i>
+                            <p class="text-xs text-slate-500"><span class="font-semibold">Clicca per selezionare</span> o trascina qui</p>
+                            <p class="text-[10px] text-slate-400">PDF, TXT, PNG, JPG (Max 20MB)</p>
+                        </div>
+                        <input id="fileInput" type="file" class="hidden" accept=".pdf,.txt,.png,.jpg,.jpeg" onchange="handleFileSelect(event)" />
+                    </label>
+                </div>
+                <!-- Box Stato File Caricato -->
+                <div id="fileInfo" class="hidden mt-2 p-2 bg-blue-50 border border-blue-200 rounded flex items-center justify-between text-xs text-blue-800">
+                    <span class="truncate pr-2" id="fileName"><i class="fa-solid fa-paperclip mr-1"></i> documento.pdf</span>
+                    <button onclick="removeFile()" class="text-red-500 hover:text-red-700 font-bold ml-2">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Area di Testo Input -->
+            <div class="flex-1 flex flex-col mb-4">
+                <textarea id="promptInput" placeholder="Es. Descrivi il caso fattuale da analizzare..." 
+                          class="w-full flex-1 min-h-[180px] p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gdf-blue focus:border-transparent resize-none bg-slate-50 text-slate-800"></textarea>
+            </div>
+
+            <!-- Azioni -->
+            <div class="flex gap-2">
+                <button onclick="clearInput()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold transition">
+                    <i class="fa-solid fa-eraser mr-1"></i> Pulisci
+                </button>
+                <button id="submitBtn" onclick="generateReport()" class="flex-1 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Analizza e Genera Report</span>
+                </button>
+            </div>
+
+            <!-- Analisi Recenti -->
+            <div class="mt-5 pt-4 border-t border-slate-200 no-print">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-gdf-blue flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-gdf-gold"></i> Analisi recenti
+                    </h3>
+                    <button onclick="clearHistory()" class="text-[11px] text-red-500 hover:text-red-700 font-semibold">
+                        <i class="fa-solid fa-trash-can mr-1"></i>Cancella tutto
+                    </button>
+                </div>
+                <button onclick="openCodeModal()" class="w-full mb-2 py-1.5 border border-gdf-blue text-gdf-blue hover:bg-blue-50 rounded text-xs font-semibold transition">
+                    <i class="fa-solid fa-key mr-1"></i> Apri conversazione condivisa (codice)
+                </button>
+                <div id="historyList" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
+                <div id="historyNote" class="mt-2"></div>
+            </div>
+        </section>
+
+        <!-- Pannello Output Report (Destra) -->
+        <section class="lg:col-span-7 bg-white p-6 rounded-xl shadow-md border border-slate-200 flex flex-col print-container">
+            <!-- Barra Azioni Report -->
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-200 no-print">
+                <h2 class="text-lg font-bold text-gdf-blue flex items-center gap-2">
+                    <i class="fa-solid fa-file-contract text-gdf-gold"></i>
+                    Report Analitico-Operativo
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="copyReport()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-solid fa-copy"></i> Copia
+                    </button>
+                    <button onclick="window.print()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-solid fa-print"></i> Stampa / PDF
+                    </button>
+                    <button onclick="exportDocs()" title="Scarica un documento apribile con Word e Google Docs" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-solid fa-file-word"></i> Docs
+                    </button>
+                    <button onclick="openShareModal()" title="Condividi questa conversazione con un collega tramite codice" class="px-3 py-1.5 bg-gdf-gold hover:bg-yellow-600 text-gdf-blue rounded border border-yellow-600 text-xs font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-share-nodes"></i> Condividi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Area Risultato -->
+            <div id="outputArea" class="flex-1 overflow-y-auto prose max-w-none text-slate-700">
+                <div class="h-full flex flex-col items-center justify-center text-slate-400 py-12">
+                    <i class="fa-solid fa-clipboard-check text-5xl mb-3 text-slate-300"></i>
+                    <p class="text-sm font-medium">Inserisci il quadro fattuale e/o l'allegato e avvia l'analisi.</p>
+                    <p class="text-xs text-slate-400 mt-1">Il report integrerà la metodologia, l'inquadramento normativo e le fonti ufficiali.</p>
+                </div>
+            </div>
+
+            <!-- Loader -->
+            <div id="loader" class="hidden flex-1 flex-col items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-gdf-blue mb-4"></div>
+                <p class="text-sm font-semibold text-gdf-blue">Analisi in corso e consultazione fonti ufficiali...</p>
+                <p class="text-xs text-slate-400 mt-1">Sviluppo del riscontro logico e della qualificazione giuridica</p>
+            </div>
+
+            <!-- Prosegui la conversazione -->
+            <div id="followUpBox" class="hidden mt-4 pt-4 border-t border-slate-200 no-print">
+                <p id="followHint" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2"></p>
+                <label for="followUpInput" class="block text-xs font-semibold text-slate-700 mb-1">
+                    <i class="fa-solid fa-comments text-gdf-gold mr-1"></i>Prosegui questa conversazione:
+                </label>
+                <div class="flex gap-2 items-end">
+                    <textarea id="followUpInput" rows="2" placeholder="Es. Approfondisci il punto 3, oppure aggiungi un nuovo elemento fattuale... (Ctrl+Invio per inviare)"
+                              class="flex-1 p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gdf-blue focus:border-transparent resize-y bg-slate-50 text-slate-800"></textarea>
+                    <button id="followBtn" onclick="sendFollowUp()" class="px-4 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i><span>Invia</span>
+                    </button>
+                </div>
+                <p id="followStatus" class="hidden text-xs text-gdf-blue font-semibold mt-2"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Elaborazione in corso...</p>
+                <p id="followError" class="hidden text-xs text-red-600 mt-2"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-3 text-center border-t border-slate-800 no-print">
+        <p>Assistente Strategico GdF &bull; Interfaccia eseguita nel browser, analisi tramite API Google Gemini &bull; Non inserire dati riservati</p>
+        <p class="mt-1">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
+    </footer>
+
+
+    <!-- Modale: Condividi -->
+    <div id="shareModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-base font-bold text-gdf-blue"><i class="fa-solid fa-share-nodes text-gdf-gold mr-2"></i>Condividi conversazione</h3>
+                <button onclick="closeModals()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="shareBody"></div>
+        </div>
+    </div>
+
+    <!-- Modale: Apri con codice -->
+    <div id="codeModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-base font-bold text-gdf-blue"><i class="fa-solid fa-key text-gdf-gold mr-2"></i>Apri conversazione condivisa</h3>
+                <button onclick="closeModals()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <label for="codeInput" class="block text-xs font-semibold text-slate-700 mb-1">Codice ricevuto dal collega:</label>
+            <input id="codeInput" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX"
+                   class="w-full p-2 border border-slate-300 rounded-lg text-center font-mono text-lg tracking-widest uppercase focus:ring-2 focus:ring-gdf-blue focus:border-transparent">
+            <p class="text-[11px] text-slate-500 mt-2">La conversazione verrà salvata come nuova conversazione nel tuo browser. Potrai proseguirla con la tua API Key.</p>
+            <p id="codeError" class="hidden text-xs text-red-600 mt-2"></p>
+            <button id="codeBtn" onclick="openSharedConversation()" class="w-full mt-3 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold transition">Apri</button>
+        </div>
+    </div>
+
+    <!-- LOGICA JAVASCRIPT -->
+    <script>
+        let selectedFileData = null;
+
+        const SYSTEM_INSTRUCTION = `
+SEI UN ASSISTENTE STRATEGICO E ANALISTA GIURIDICO-OPERATIVO SPECIALIZZATO IN DIRITTO PENALE ECONOMICO, DIRITTO TRIBUTARIO E TECNICHE DI POLIZIA GIUDIZIARIA PER LA GUARDIA DI FINANZA.
+
+CONTESTO: L'utente è un Maresciallo della Guardia di Finanza, analista esperto e istruttore. Fungi da "secondo cervello" e guida operativa con la filosofia: "non sostituire chi indaga, ma aiutarlo a pensare meglio, verificare di più e sbagliare di meno".
+
+ISTRUZIONE PRINCIPALE: Analizza il quadro fattuale, il testo inserito ed eventuali documenti allegati:
+1. Analisi Logico-Metodologica (vagliando correttezza, vulnerabilità o piste alternative).
+2. Qualificazione Giuridica (ipotesi di illecito penale-economico, tributario, amministrativo, antiriciclaggio e relative sanzioni).
+3. Ricerca e Verifica delle Fonti (Normattiva, Gazzetta Ufficiale, Cassazione, CGUE, Agenzia delle Entrate, UIF, CONSOB, ecc.).
+4. Elaborazione Report.
+
+VINCOLI:
+- Autonomia del giudizio umano: non formulare giudizi categorici ma adotta un approccio maieutico orientato al riscontro probatorio.
+- Gestione delle lacune: se gli elementi sono insufficienti, esplicita chiaramente cosa manca.
+- Tono e Stile: rigoroso, istituzionale, tecnico-giuridico, privo di fronzoli e operativo.
+- Gerarchia delle fonti: la norma di legge ed il dato giurisprudenziale prevalgono sempre su circolari o prassi.
+
+CONVERSAZIONE: se l'operatore pone domande di approfondimento o aggiunge elementi dopo il primo report, rispondi in modo mirato a quanto richiesto, tenendo conto di tutto lo scambio precedente, senza rigenerare l'intero report salvo esplicita richiesta.\n\nOUTPUT ATTESO (per la prima analisi):
+Genera un report articolato esattamente nelle seguenti sezioni Markdown:
+1. Sintesi del Quadro Fattuale e dei Documenti Allegati
+2. Valutazione della Metodologia Investigativa (Punti di forza, criticità logiche, rischi procedurali o eccezioni difensive)
+3. Inquadramento Giuridico e Fonti Applicabili (Articoli di legge, Cassazione/CGUE, circolari)
+4. Prospetto Illeciti e Sanzioni (Tabella o elenco analitico delle sanzioni)
+5. Raccomandazioni Operative (Proposte concrete sui prossimi passi per blindare il quadro probatorio)
+        `;
+
+
+        // ---------- CONVERSAZIONI RECENTI (solo localStorage di questo browser) ----------
+        const HISTORY_KEY = 'gdf_analisi_recenti';
+        const HISTORY_MAX = 20;
+        const DEFAULT_PROMPT = "Analizza dettagliatamente il quadro fattuale e/o il documento allegato fornendo il report completo.";
+        let currentConv = null;
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function loadHistory() {
+            let list;
+            try { list = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+            catch { list = []; }
+            // Compatibilità con il vecchio formato (prompt + report)
+            return list.map(item => {
+                if (item.messages) return item;
+                return {
+                    id: item.id, ts: item.ts, title: item.title,
+                    messages: [
+                        { role: 'user', text: item.prompt || '', fileName: item.fileName || '' },
+                        { role: 'model', text: item.report || '' }
+                    ]
+                };
+            });
+        }
+
+        function persistHistory(list) {
+            // Se lo spazio è pieno, elimina le più vecchie finché il salvataggio riesce
+            while (list.length) {
+                try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); return; }
+                catch { list.pop(); }
+            }
+            try { localStorage.removeItem(HISTORY_KEY); } catch {}
+        }
+
+        function saveConversation() {
+            if (!currentConv) return;
+            const stored = {
+                id: currentConv.id,
+                ts: currentConv.ts,
+                title: currentConv.title,
+                messages: currentConv.messages.map(m => ({ role: m.role, text: m.text, fileName: m.fileName || '' }))
+            };
+            const list = loadHistory().filter(i => i.id !== stored.id);
+            list.unshift(stored);
+            persistHistory(list.slice(0, HISTORY_MAX));
+            renderHistory();
+        }
+
+        // Nota sul limite: discreta fino a 14 conversazioni, alert dalla 15esima in poi
+        function renderHistoryNote(count) {
+            const note = document.getElementById('historyNote');
+            if (!note) return;
+            if (count >= HISTORY_MAX) {
+                note.innerHTML = `<div class="bg-red-50 border border-red-300 text-red-800 rounded px-2 py-1.5 text-[11px]">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>Archivio pieno (${count}/${HISTORY_MAX}): la prossima analisi cancellerà automaticamente la conversazione più vecchia.</strong></div>`;
+            } else if (count >= 15) {
+                note.innerHTML = `<div class="bg-amber-50 border border-amber-300 text-amber-800 rounded px-2 py-1.5 text-[11px]">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>Attenzione: hai ${count} conversazioni su ${HISTORY_MAX}. Alla ventunesima, la più vecchia si cancella automaticamente.</strong></div>`;
+            } else {
+                note.innerHTML = `<p class="text-[10px] text-slate-400">Vengono conservate le ultime ${HISTORY_MAX} conversazioni, salvate solo in questo browser.</p>`;
+            }
+        }
+
+        function renderHistory() {
+            const box = document.getElementById('historyList');
+            const list = loadHistory();
+            renderHistoryNote(list.length);
+            if (!list.length) {
+                box.innerHTML = '<p class="text-xs text-slate-400 italic">Nessuna conversazione salvata.</p>';
+                return;
+            }
+            box.innerHTML = list.map(item => {
+                const d = new Date(item.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+                const turns = item.messages.filter(m => m.role === 'user').length;
+                const active = currentConv && currentConv.id === item.id ? ' ring-2 ring-gdf-gold' : '';
+                return `
+                <div class="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded px-2 py-1.5${active}">
+                    <button onclick="openHistory(${item.id})" class="flex-1 text-left min-w-0">
+                        <span class="block text-xs font-semibold text-slate-700 truncate">${escapeHtml(item.title)}</span>
+                        <span class="block text-[10px] text-slate-400">${d} &bull; ${turns} ${turns === 1 ? 'messaggio' : 'messaggi'}</span>
+                    </button>
+                    <button onclick="deleteHistory(${item.id})" title="Elimina" class="text-slate-400 hover:text-red-600 px-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>`;
+            }).join('');
+        }
+
+        function renderConversation() {
+            const out = document.getElementById('outputArea');
+            if (!currentConv) return;
+            out.innerHTML = currentConv.messages.map(m => {
+                if (m.role === 'user') {
+                    return `<div class="not-prose bg-blue-50 border-l-4 border-gdf-blue rounded px-3 py-2 my-4 text-sm text-slate-700">
+                        <div class="text-[10px] font-bold uppercase tracking-wide text-gdf-blue mb-1"><i class="fa-solid fa-user mr-1"></i>Operatore${m.fileName ? ' &bull; <i class="fa-solid fa-paperclip"></i> ' + escapeHtml(m.fileName) : ''}</div>
+                        <div style="white-space:pre-wrap">${escapeHtml(m.text)}</div>
+                    </div>`;
+                }
+                return `<div class="mb-2">${marked.parse(m.text)}</div>`;
+            }).join('');
+            out.classList.remove('hidden');
+
+            // Avviso se ci sono allegati non più disponibili in memoria
+            const hint = document.getElementById('followHint');
+            const lost = currentConv.messages.filter(m => m.role === 'user' && m.fileName && !m._file);
+            if (lost.length) {
+                hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>Allegato/i non più disponibile/i in memoria: ' + lost.map(m => escapeHtml(m.fileName)).join(', ') + '. Se ti serve, ricaricalo dal pannello a sinistra prima di inviare.';
+                hint.classList.remove('hidden');
+            } else {
+                hint.classList.add('hidden');
+            }
+            document.getElementById('followUpBox').classList.remove('hidden');
+            renderHistory();
+        }
+
+        function openHistory(id) {
+            const item = loadHistory().find(i => i.id === id);
+            if (!item) return;
+            currentConv = JSON.parse(JSON.stringify(item));
+            document.getElementById('followError').classList.add('hidden');
+            document.getElementById('promptInput').value = currentConv.messages[0]?.text === DEFAULT_PROMPT ? '' : (currentConv.messages[0]?.text || '');
+            renderConversation();
+        }
+
+        function deleteHistory(id) {
+            persistHistory(loadHistory().filter(i => i.id !== id));
+            if (currentConv && currentConv.id === id) {
+                currentConv = null;
+                document.getElementById('followUpBox').classList.add('hidden');
+            }
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if (!confirm('Eliminare tutte le conversazioni salvate in questo browser?')) return;
+            try { localStorage.removeItem(HISTORY_KEY); } catch {}
+            currentConv = null;
+            document.getElementById('followUpBox').classList.add('hidden');
+            renderHistory();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gdf_gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+            }
+            renderHistory();
+        });
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('gdf_gemini_api_key', key);
+                alert('API Key salvata con successo nel browser!');
+            } else {
+                localStorage.removeItem('gdf_gemini_api_key');
+                alert('API Key rimossa.');
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 20 * 1024 * 1024) {
+                alert('Il file supera la dimensione massima consentita di 20MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64Data = e.target.result.split(',')[1];
+                selectedFileData = {
+                    mimeType: file.type || 'application/pdf',
+                    data: base64Data,
+                    name: file.name
+                };
+
+                document.getElementById('fileName').innerHTML = `<i class="fa-solid fa-paperclip mr-1"></i> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                document.getElementById('fileInfo').classList.remove('hidden');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function removeFile() {
+            selectedFileData = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileInfo').classList.add('hidden');
+        }
+
+        function clearInput() {
+            document.getElementById('promptInput').value = '';
+            removeFile();
+        }
+
+        function copyReport() {
+            const outputArea = document.getElementById('outputArea');
+            if (!outputArea.innerText.trim()) return;
+            navigator.clipboard.writeText(outputArea.innerText);
+            alert('Report copiato negli appunti!');
+        }
+
+
+        // Esporta la conversazione corrente come documento .doc (apribile con Word e Google Docs)
+        function exportDocs() {
+            if (!currentConv) {
+                alert('Non c\'è ancora nessun report da esportare.');
+                return;
+            }
+            const body = currentConv.messages.map(m => {
+                if (m.role === 'user') {
+                    return `<div style="border-left:4px solid #0B2341;background:#EFF6FF;padding:6px 10px;margin:14px 0;">
+                        <p style="font-size:9pt;font-weight:bold;color:#0B2341;margin:0 0 4px 0;">OPERATORE${m.fileName ? ' - Allegato: ' + escapeHtml(m.fileName) : ''}</p>
+                        <p style="margin:0;white-space:pre-wrap;">${escapeHtml(m.text)}</p>
+                    </div>`;
+                }
+                return marked.parse(m.text);
+            }).join('\n');
+
+            const data = new Date().toLocaleString('it-IT');
+            const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${escapeHtml(currentConv.title)}</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1e293b; line-height: 1.4; }
+  h1 { font-size: 16pt; color: #0B2341; border-bottom: 2px solid #D4AF37; padding-bottom: 3px; margin-top: 18pt; }
+  h2 { font-size: 13pt; color: #1E3A8A; margin-top: 14pt; }
+  h3 { font-size: 11.5pt; color: #334155; margin-top: 10pt; }
+  table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
+  th { background: #0B2341; color: #ffffff; border: 1px solid #cbd5e1; padding: 4pt; text-align: left; }
+  td { border: 1px solid #cbd5e1; padding: 4pt; }
+  blockquote { border-left: 3px solid #D4AF37; padding-left: 8pt; color: #475569; font-style: italic; }
+</style></head>
+<body>
+<p style="font-size:9pt;color:#64748b;">Assistente Strategico GdF &ndash; generato il ${data}</p>
+${body}
+<hr>
+<p style="font-size:8pt;color:#64748b;">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
+</body></html>`;
+
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const nome = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = 'analisi-gdf-' + nome + '.doc';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        // Costruisce i "contents" per l'API da tutta la conversazione
+        function buildContents(conv) {
+            return conv.messages.map((m, i) => {
+                const parts = [];
+                if (m.role === 'user' && m._file) {
+                    parts.push({ inlineData: { mimeType: m._file.mimeType, data: m._file.data } });
+                }
+                const text = (m.role === 'user' && i === 0)
+                    ? "QUADRO FATTUALE / ISTRUZIONI OPERATORE:\n" + m.text
+                    : m.text;
+                parts.push({ text });
+                return { role: m.role, parts };
+            });
+        }
+
+        // Chiamata a Gemini: restituisce il testo oppure lancia un errore leggibile
+        async function callGemini(contents) {
+            const apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gdf_gemini_api_key');
+            const model = document.getElementById('modelSelect').value;
+            if (!apiKey) throw new Error('Inserisci la tua Google Gemini API Key per proseguire!');
+
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const payload = {
+                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+                contents: contents,
+                tools: [{ googleSearch: {} }]
+            };
+
+            const callApi = (pl) => fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pl)
+            });
+
+            // Legge il body UNA sola volta e lo restituisce già parsato
+            const readJson = async (res) => {
+                const txt = await res.text();
+                try { return JSON.parse(txt); } catch { return { error: { message: txt.slice(0, 300) } }; }
+            };
+
+            let response = await callApi(payload);
+            let data = await readJson(response);
+
+            // Se la ricerca web non è disponibile (quota / tool non supportato), riprova senza
+            if (!response.ok && (response.status === 429 || response.status === 400)) {
+                console.warn("Errore con Google Search, riprovo senza ricerca:", data.error);
+                delete payload.tools;
+                response = await callApi(payload);
+                data = await readJson(response);
+            }
+
+            if (!response.ok) {
+                const code = response.status;
+                let hint = '';
+                if (code === 404) hint = ' (Modello non trovato o non più accessibile.)';
+                else if (code === 403) hint = ' (Chiave non valida, con restrizioni, o modello non abilitato per il tuo progetto.)';
+                else if (code === 429) hint = ' (Quota esaurita: attendi o controlla i limiti su AI Studio.)';
+                throw new Error('HTTP ' + code + ' - ' + (data.error?.message || 'Errore durante la chiamata API') + hint);
+            }
+
+            const candidate = data.candidates?.[0];
+            const text = (candidate?.content?.parts || []).map(p => p.text || '').join('');
+            if (!text) {
+                const reason = data.promptFeedback?.blockReason || candidate?.finishReason || 'sconosciuto';
+                throw new Error('Nessun risultato generato dal modello (motivo: ' + reason + '). Verifica l\'input.');
+            }
+            return text;
+        }
+
+        // Nuova analisi (avvia una nuova conversazione)
+        async function generateReport() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gdf_gemini_api_key');
+            const promptText = document.getElementById('promptInput').value.trim();
+
+            if (!apiKey) {
+                alert('Inserisci la tua Google Gemini API Key per proseguire!');
+                return;
+            }
+            if (!promptText && !selectedFileData) {
+                alert('Inserisci del testo oppure carica un allegato da analizzare.');
+                return;
+            }
+
+            const outputArea = document.getElementById('outputArea');
+            const loader = document.getElementById('loader');
+            const submitBtn = document.getElementById('submitBtn');
+
+            document.getElementById('followUpBox').classList.add('hidden');
+            outputArea.classList.add('hidden');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            submitBtn.disabled = true;
+
+            const firstLine = (promptText || ('Allegato: ' + selectedFileData.name)).replace(/\s+/g, ' ').trim();
+            const conv = {
+                id: Date.now(),
+                ts: new Date().toISOString(),
+                title: firstLine.slice(0, 80),
+                messages: [{
+                    role: 'user',
+                    text: promptText || DEFAULT_PROMPT,
+                    fileName: selectedFileData ? selectedFileData.name : '',
+                    _file: selectedFileData
+                }]
+            };
+
+            try {
+                const reply = await callGemini(buildContents(conv));
+                conv.messages.push({ role: 'model', text: reply });
+                currentConv = conv;
+                saveConversation();
+                renderConversation();
+            } catch (error) {
+                console.error(error);
+                currentConv = null;
+                outputArea.innerHTML = `
+                    <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                        <h3 class="font-bold mb-1">Si è verificato un errore:</h3>
+                        <p class="text-sm">${escapeHtml(error.message)}</p>
+                    </div>
+                `;
+            } finally {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                outputArea.classList.remove('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Prosegue la conversazione corrente
+        async function sendFollowUp() {
+            if (!currentConv) return;
+            const input = document.getElementById('followUpInput');
+            const text = input.value.trim();
+            const errBox = document.getElementById('followError');
+            const status = document.getElementById('followStatus');
+            const btn = document.getElementById('followBtn');
+            errBox.classList.add('hidden');
+
+            // Allega il file solo se è nuovo (non già usato in questa conversazione)
+            const newFile = (selectedFileData && !currentConv.messages.some(m => m._file === selectedFileData)) ? selectedFileData : null;
+
+            if (!text && !newFile) return;
+
+            currentConv.messages.push({
+                role: 'user',
+                text: text || 'Considera anche il nuovo allegato.',
+                fileName: newFile ? newFile.name : '',
+                _file: newFile
+            });
+
+            btn.disabled = true;
+            input.disabled = true;
+            status.classList.remove('hidden');
+
+            try {
+                const reply = await callGemini(buildContents(currentConv));
+                currentConv.messages.push({ role: 'model', text: reply });
+                input.value = '';
+                saveConversation();
+                renderConversation();
+                // Porta in vista l'inizio dell'ultima risposta
+                const out = document.getElementById('outputArea');
+                const last = out.lastElementChild;
+                if (last) last.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                console.error(error);
+                currentConv.messages.pop(); // annulla il messaggio non andato a buon fine
+                errBox.textContent = 'Errore: ' + error.message;
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                input.disabled = false;
+                status.classList.add('hidden');
+                input.focus();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('followUpInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendFollowUp(); }
+            });
+        });
+
+        // ================= CONDIVISIONE CON CODICE (Firebase + cifratura nel browser) =================
+        // 1) Crea un progetto Firebase e incolla qui sotto la sua configurazione (non è un segreto).
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAva2vqhJ_KVTDHx_uxXDO7OEnpFGKwz5w",
+            authDomain: "eco-nomy-analyzer.firebaseapp.com",
+            projectId: "eco-nomy-analyzer",
+            appId: "1:616640685883:web:f8505e1a3c17ee2874f91e"
+        };
+        const FIREBASE_VERSION = '10.14.1';
+
+        /* ------------------------------------------------------------------
+           REGOLE DI SICUREZZA FIRESTORE
+           Da incollare in: Firebase Console -> Firestore Database -> Regole -> Pubblica
+           (stesso contenuto del file firebase/firestore.rules)
+
+           rules_version = '2';
+           service cloud.firestore {
+             match /databases/{database}/documents {
+
+               // Il documento ha come nome un hash derivato dal codice: si legge
+               // solo conoscendo il codice. Non e' possibile elencare i documenti.
+               match /shares/{shareId} {
+
+                 allow get: if request.auth != null
+                            && request.time < resource.data.expiresAt;
+
+                 allow list: if false;
+
+                 allow create: if request.auth != null
+                               && request.resource.data.keys().hasOnly(['owner', 'iv', 'ct', 'createdAt', 'expiresAt'])
+                               && request.resource.data.owner == request.auth.uid
+                               && request.resource.data.iv is string
+                               && request.resource.data.ct is string
+                               && request.resource.data.ct.size() < 900000
+                               && request.resource.data.createdAt == request.time
+                               && request.resource.data.expiresAt is timestamp
+                               && request.resource.data.expiresAt > request.time
+                               && request.resource.data.expiresAt <= request.time + duration.value(8, 'd');
+
+                 allow update: if false;
+
+                 // Solo chi ha creato la condivisione puo' revocarla
+                 allow delete: if request.auth != null
+                               && resource.data.owner == request.auth.uid;
+               }
+             }
+           }
+
+           Altre impostazioni su Firebase (vedi README.md):
+           - Authentication -> Metodo di accesso -> Anonimo: ATTIVO
+           - Firestore -> TTL: raccolta "shares", campo "expiresAt"
+           - Authentication -> Impostazioni -> Domini autorizzati: aggiungi USER.github.io
+           ------------------------------------------------------------------ */
+
+        const SHARES_KEY = 'gdf_condivisioni';
+        const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 caratteri, senza 0/O/1/I
+        let fbCache = null;
+
+        // ---- CRYPTO START ----
+        function generateCode() {
+            const bytes = crypto.getRandomValues(new Uint8Array(12));
+            let c = '';
+            for (const b of bytes) c += CODE_ALPHABET[b % 32];
+            return c.match(/.{4}/g).join('-');
+        }
+
+        function normalizeCode(raw) {
+            return String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        }
+
+        function toB64(buf) {
+            const bytes = new Uint8Array(buf);
+            let bin = '';
+            for (let i = 0; i < bytes.length; i += 0x8000) {
+                bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+            }
+            return btoa(bin);
+        }
+
+        function fromB64(b64) {
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes;
+        }
+
+        // Dal codice si ricavano l'identificativo del documento e la chiave di cifratura.
+        // Il codice NON viene mai inviato a Firebase.
+        async function deriveFromCode(code) {
+            if (!crypto || !crypto.subtle) throw new Error('Cifratura non disponibile: apri la pagina da http://localhost oppure da file locale.');
+            const enc = new TextEncoder();
+            const base = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveBits', 'deriveKey']);
+            const idBits = await crypto.subtle.deriveBits(
+                { name: 'PBKDF2', salt: enc.encode('gdf-share-id-v1'), iterations: 200000, hash: 'SHA-256' }, base, 256);
+            const id = Array.from(new Uint8Array(idBits)).map(b => b.toString(16).padStart(2, '0')).join('');
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: enc.encode('gdf-share-key-v1'), iterations: 200000, hash: 'SHA-256' },
+                base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+            return { id, key };
+        }
+
+        async function encryptPayload(key, obj) {
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const data = new TextEncoder().encode(JSON.stringify(obj));
+            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+            return { iv: toB64(iv), ct: toB64(ct) };
+        }
+
+        async function decryptPayload(key, ivB64, ctB64) {
+            const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(ivB64) }, key, fromB64(ctB64));
+            return JSON.parse(new TextDecoder().decode(pt));
+        }
+        // ---- CRYPTO END ----
+
+        function firebaseConfigured() {
+            return FIREBASE_CONFIG.projectId && !String(FIREBASE_CONFIG.projectId).startsWith('INSERISCI');
+        }
+
+        async function getFirebase() {
+            if (fbCache) return fbCache;
+            const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+            const [appM, authM, fsM] = await Promise.all([
+                import(base + 'firebase-app.js'),
+                import(base + 'firebase-auth.js'),
+                import(base + 'firebase-firestore.js')
+            ]);
+            const app = appM.initializeApp(FIREBASE_CONFIG);
+            const auth = authM.getAuth(app);
+            await auth.authStateReady();
+            if (!auth.currentUser) await authM.signInAnonymously(auth);
+            fbCache = { db: fsM.getFirestore(app), fs: fsM, uid: auth.currentUser.uid };
+            return fbCache;
+        }
+
+        function friendlyFirebaseError(e) {
+            const m = (e && (e.code || e.message)) || '';
+            if (String(m).includes('operation-not-allowed') || String(m).includes('admin-restricted')) return 'Accesso anonimo non attivo: abilitalo in Firebase → Authentication → Metodo di accesso → Anonimo.';
+            if (String(m).includes('permission-denied')) return 'Operazione non consentita (regole di sicurezza) oppure codice non valido o scaduto.';
+            if (String(m).includes('unavailable') || String(m).includes('network') || String(m).includes('Failed to fetch')) return 'Impossibile contattare Firebase: controlla la connessione.';
+            return e && e.message ? e.message : 'Errore sconosciuto';
+        }
+
+        function loadShares() {
+            let o;
+            try { o = JSON.parse(localStorage.getItem(SHARES_KEY)) || {}; } catch { o = {}; }
+            const now = Date.now();
+            let changed = false;
+            for (const k in o) { if (o[k].expiresAt <= now) { delete o[k]; changed = true; } }
+            if (changed) saveShares(o);
+            return o;
+        }
+        function saveShares(o) { try { localStorage.setItem(SHARES_KEY, JSON.stringify(o)); } catch {} }
+
+        function closeModals() {
+            ['shareModal', 'codeModal'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
+        }
+        function showModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+
+        function notConfiguredMessage() {
+            alert('Condivisione non ancora configurata.\n\nApri il file e inserisci i dati del tuo progetto Firebase nella costante FIREBASE_CONFIG (vedi istruzioni).');
+        }
+
+        // ---- Condividi ----
+        function openShareModal() {
+            if (!firebaseConfigured()) return notConfiguredMessage();
+            if (!currentConv) { alert('Non c\'è ancora nessuna conversazione da condividere.'); return; }
+            renderShareModal();
+            showModal('shareModal');
+        }
+
+        function renderShareModal(errorMsg) {
+            const body = document.getElementById('shareBody');
+            const info = loadShares()[currentConv.id];
+            const err = errorMsg ? `<p class="text-xs text-red-600 mt-2">${escapeHtml(errorMsg)}</p>` : '';
+            if (info) {
+                const scad = new Date(info.expiresAt).toLocaleString('it-IT');
+                body.innerHTML = `
+                    <p class="text-xs text-slate-600 mb-2">Conversazione condivisa. Invia questo codice al collega:</p>
+                    <div class="bg-slate-50 border border-slate-300 rounded-lg p-3 text-center font-mono text-2xl tracking-widest text-gdf-blue select-all">${escapeHtml(info.code)}</div>
+                    <p class="text-[11px] text-slate-500 mt-2">Scade il <strong>${scad}</strong>. Dopo la scadenza il codice non funziona più.</p>
+                    <p class="text-[11px] text-slate-500 mt-1">La copia condivisa è un'istantanea: se prosegui la conversazione, per aggiornare il collega revoca e genera un nuovo codice.</p>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="copyShareCode()" class="flex-1 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold transition"><i class="fa-solid fa-copy mr-1"></i>Copia codice</button>
+                        <button onclick="revokeShare()" class="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded-lg text-sm font-bold transition"><i class="fa-solid fa-ban mr-1"></i>Revoca</button>
+                    </div>${err}`;
+            } else {
+                body.innerHTML = `
+                    <p class="text-xs text-slate-600 mb-3">La conversazione viene <strong>cifrata nel tuo browser</strong> prima dell'invio: su Firebase finisce solo testo illeggibile, che si decifra con il codice. Gli allegati non vengono condivisi, solo il testo.</p>
+                    <div class="bg-amber-50 border border-amber-300 text-amber-800 rounded px-2 py-1.5 text-[11px] mb-3">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>Non condividere nominativi, dati identificativi o atti coperti da segreto.</strong>
+                    </div>
+                    <label for="shareDuration" class="block text-xs font-semibold text-slate-700 mb-1">Validità del codice:</label>
+                    <select id="shareDuration" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2">
+                        <option value="24">24 ore</option>
+                        <option value="72" selected>3 giorni</option>
+                        <option value="168">7 giorni</option>
+                    </select>
+                    <button id="shareBtn" onclick="doShare()" class="w-full mt-4 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold transition">Genera codice di condivisione</button>${err}`;
+            }
+        }
+
+        async function doShare() {
+            const btn = document.getElementById('shareBtn');
+            const hours = parseInt(document.getElementById('shareDuration').value, 10) || 72;
+            btn.disabled = true;
+            btn.textContent = 'Cifratura e invio in corso...';
+            try {
+                const payload = {
+                    title: currentConv.title,
+                    ts: currentConv.ts,
+                    messages: currentConv.messages.map(m => ({ role: m.role, text: m.text, fileName: m.fileName || '' }))
+                };
+                const code = generateCode();
+                const { id, key } = await deriveFromCode(code);
+                const { iv, ct } = await encryptPayload(key, payload);
+                if (ct.length > 900000) throw new Error('La conversazione è troppo lunga per essere condivisa.');
+
+                const fb = await getFirebase();
+                const expiresAtMs = Date.now() + hours * 3600 * 1000;
+                await fb.fs.setDoc(fb.fs.doc(fb.db, 'shares', id), {
+                    owner: fb.uid,
+                    iv, ct,
+                    createdAt: fb.fs.serverTimestamp(),
+                    expiresAt: fb.fs.Timestamp.fromMillis(expiresAtMs)
+                });
+
+                const shares = loadShares();
+                shares[currentConv.id] = { code, id, expiresAt: expiresAtMs };
+                saveShares(shares);
+                renderShareModal();
+            } catch (e) {
+                console.error(e);
+                renderShareModal(friendlyFirebaseError(e));
+            }
+        }
+
+        function copyShareCode() {
+            const info = loadShares()[currentConv.id];
+            if (!info) return;
+            navigator.clipboard.writeText(info.code);
+            alert('Codice copiato negli appunti.');
+        }
+
+        async function revokeShare() {
+            const shares = loadShares();
+            const info = shares[currentConv.id];
+            if (!info) return;
+            if (!confirm('Revocare la condivisione? Il codice smetterà di funzionare subito.')) return;
+            try {
+                const fb = await getFirebase();
+                await fb.fs.deleteDoc(fb.fs.doc(fb.db, 'shares', info.id));
+                delete shares[currentConv.id];
+                saveShares(shares);
+                renderShareModal();
+            } catch (e) {
+                console.error(e);
+                renderShareModal(friendlyFirebaseError(e));
+            }
+        }
+
+        // ---- Apri con codice ----
+        function openCodeModal() {
+            if (!firebaseConfigured()) return notConfiguredMessage();
+            document.getElementById('codeInput').value = '';
+            document.getElementById('codeError').classList.add('hidden');
+            showModal('codeModal');
+            setTimeout(() => document.getElementById('codeInput').focus(), 50);
+        }
+
+        async function openSharedConversation() {
+            const errBox = document.getElementById('codeError');
+            const btn = document.getElementById('codeBtn');
+            errBox.classList.add('hidden');
+            const code = normalizeCode(document.getElementById('codeInput').value);
+            if (code.length !== 12) {
+                errBox.textContent = 'Il codice deve avere 12 caratteri (formato XXXX-XXXX-XXXX).';
+                errBox.classList.remove('hidden');
+                return;
+            }
+            const pretty = code.match(/.{4}/g).join('-');
+            btn.disabled = true;
+            btn.textContent = 'Apertura in corso...';
+            try {
+                const { id, key } = await deriveFromCode(pretty);
+                const fb = await getFirebase();
+                let snap;
+                try {
+                    snap = await fb.fs.getDoc(fb.fs.doc(fb.db, 'shares', id));
+                } catch (e) {
+                    if (String(e.code || e.message).includes('permission-denied')) throw new Error('Codice non valido o scaduto.');
+                    throw e;
+                }
+                if (!snap.exists()) throw new Error('Codice non valido o scaduto.');
+                const d = snap.data();
+                let payload;
+                try { payload = await decryptPayload(key, d.iv, d.ct); }
+                catch { throw new Error('Impossibile decifrare: codice errato o dati alterati.'); }
+
+                const title = payload.title || 'Conversazione condivisa';
+                currentConv = {
+                    id: Date.now(),
+                    ts: new Date().toISOString(),
+                    title: title.startsWith('[Condivisa]') ? title : '[Condivisa] ' + title,
+                    messages: (payload.messages || []).map(m => ({ role: m.role, text: m.text, fileName: m.fileName || '' }))
+                };
+                document.getElementById('promptInput').value = '';
+                saveConversation();
+                renderConversation();
+                closeModals();
+            } catch (e) {
+                console.error(e);
+                errBox.textContent = friendlyFirebaseError(e);
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Apri';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('codeInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); openSharedConversation(); }
+            });
+            ['shareModal', 'codeModal'].forEach(id => {
+                document.getElementById(id).addEventListener('click', (e) => { if (e.target.id === id) closeModals(); });
+            });
+        });
+    </script>
+</body>
+</html>
