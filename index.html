@@ -751,6 +751,9 @@ ${body}
             appId: "1:616640685883:web:f8505e1a3c17ee2874f91e"
         };
         const FIREBASE_VERSION = '10.14.1';
+        // App Check con Fraud Defense (reCAPTCHA Enterprise). La chiave del sito e' pubblica, non e' un segreto.
+        // Lasciala vuota ('') per disattivare App Check.
+        const APPCHECK_SITE_KEY = '6LccHectAAAAAB9A6gr-mxMjNOQagjI45-Boe3pY';
 
         /* ------------------------------------------------------------------
            REGOLE DI SICUREZZA FIRESTORE
@@ -863,12 +866,29 @@ ${body}
         async function getFirebase() {
             if (fbCache) return fbCache;
             const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
-            const [appM, authM, fsM] = await Promise.all([
+            const [appM, authM, fsM, acM] = await Promise.all([
                 import(base + 'firebase-app.js'),
                 import(base + 'firebase-auth.js'),
-                import(base + 'firebase-firestore.js')
+                import(base + 'firebase-firestore.js'),
+                import(base + 'firebase-app-check.js')
             ]);
+            // In locale (localhost) App Check usa un debug token: compare nella console del browser
+            // e va registrato in Firebase > App Check > App > Gestisci token di debug.
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+            }
             const app = appM.initializeApp(FIREBASE_CONFIG);
+            if (APPCHECK_SITE_KEY) {
+                try {
+                    // Va inizializzato PRIMA di Auth e Firestore
+                    acM.initializeAppCheck(app, {
+                        provider: new acM.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY),
+                        isTokenAutoRefreshEnabled: true
+                    });
+                } catch (e) {
+                    console.warn('App Check non inizializzato:', e);
+                }
+            }
             const auth = authM.getAuth(app);
             await auth.authStateReady();
             if (!auth.currentUser) await authM.signInAnonymously(auth);
