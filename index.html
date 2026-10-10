@@ -192,6 +192,99 @@
             .site-panel { box-shadow: none !important; }
             .gem-fab { display: none !important; }
         }
+
+        /* ===== SELETTORE MODULI: vista affiancata, Modulo 1, Modulo 2 ===== */
+        .site-header { overflow: visible; z-index: 30; }
+        .module-selector { position: relative; z-index: 60; }
+        .module-menu-trigger {
+            display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+            min-height: 43px; padding: 10px 13px; color: #fff;
+            border: 1px solid rgba(212, 175, 55, .55); border-radius: 11px;
+            background: rgba(6, 23, 42, .65); font-weight: 700; font-size: 12px;
+            white-space: nowrap; cursor: pointer; transition: background .18s, border-color .18s;
+        }
+        .module-menu-trigger:hover, .module-menu-trigger:focus-visible {
+            background: #204568; border-color: #e4cb79;
+        }
+        .module-menu-trigger:focus-visible, .module-choice:focus-visible, .module-shortcut:focus-visible {
+            outline: 3px solid #e6c766; outline-offset: 3px;
+        }
+        .module-menu-panel {
+            position: absolute; right: 0; top: calc(100% + 9px); width: min(310px, calc(100vw - 32px));
+            display: flex; flex-direction: column; padding: 8px; gap: 4px;
+            background: white; border: 1px solid #dfebf2; border-radius: 15px;
+            box-shadow: 0 20px 48px rgba(4, 21, 40, .24); color: #0B2341;
+        }
+        .module-menu-panel[hidden] { display: none !important; }
+        .module-menu-caption {
+            padding: 6px 10px 3px; color: #64748b; font-size: 10px;
+            font-weight: 800; letter-spacing: .13em; text-transform: uppercase;
+        }
+        .module-choice {
+            width: 100%; display: flex; align-items: center; gap: 11px;
+            padding: 11px 10px; border-radius: 10px; text-align: left;
+            background: transparent; color: #1e293b; cursor: pointer;
+        }
+        .module-choice:hover { background: #eff5fb; }
+        .module-choice.is-active { background: #f9f4e4; color: #0B2341; }
+        .module-choice-icon { width: 23px; flex: 0 0 23px; text-align: center; color: #b48d26; }
+        .module-choice-title { display: block; font-size: 12px; font-weight: 800; line-height: 1.5; }
+        .module-choice-subtitle { display: block; font-size: 11px; color: #64748b; line-height: 1.4; }
+        .module-check { margin-left: auto; color: #9a7829; font-size: 12px; opacity: 0; }
+        .module-choice.is-active .module-check { opacity: 1; }
+        .module-shortcut { display: none; }
+        @media screen {
+            .site-main { align-items: stretch; }
+            .site-main .module-card { min-width: 0; }
+            .site-main .module-card.is-collapsed {
+                align-self: start; padding: 17px 12px; background: linear-gradient(165deg, #f8fbff, #f1f5f9);
+                border: 1px solid #d5e1ec; box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
+            }
+            .site-main .module-card.is-collapsed > :not(.module-shortcut) { display: none !important; }
+            .site-main .module-card.is-collapsed > .module-shortcut {
+                display: flex; flex: 1; flex-direction: column; align-items: center;
+                justify-content: center; gap: 12px; min-height: 180px; width: 100%;
+                padding: 18px 8px; border: 1px dashed #b4c9da; border-radius: 13px;
+                color: #0B2341; background: rgba(255,255,255,.78);
+                text-align: center; cursor: pointer; transition: background .2s, border-color .2s;
+            }
+            .site-main .module-card.is-collapsed > .module-shortcut:hover {
+                background: #fffaf0; border-color: #c5a14c;
+            }
+            .module-shortcut-icon {
+                display: flex; align-items: center; justify-content: center;
+                width: 45px; height: 45px; border-radius: 13px;
+                background: #0B2341; color: #D4AF37; font-size: 19px;
+            }
+            .module-shortcut-kicker { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: #9a7829; }
+            .module-shortcut-title { font-size: 13px; line-height: 1.4; font-weight: 800; overflow-wrap: anywhere; }
+            .module-shortcut-open { font-size: 11px; font-weight: 800; color: #1e3a8a; }
+        }
+        @media screen and (min-width: 1024px) {
+            .site-main .module-card.is-collapsed { position: sticky; top: 18px; }
+            .site-main.view-module-1 #inputPanel { grid-column: span 10 / span 10; }
+            .site-main.view-module-1 #outputPanel { grid-column: span 2 / span 2; }
+            .site-main.view-module-2 #inputPanel { grid-column: span 2 / span 2; }
+            .site-main.view-module-2 #outputPanel { grid-column: span 10 / span 10; }
+        }
+        @media (max-width: 640px) {
+            .header-controls { width: 100%; }
+            .module-selector { margin-left: auto; }
+            .module-menu-trigger { max-width: 100%; }
+            .module-menu-panel { right: 0; }
+            .site-main .module-card.is-collapsed > .module-shortcut { min-height: 110px; flex-direction: row; text-align: left; padding: 14px; }
+            .module-shortcut-icon { flex: 0 0 45px; }
+            .module-shortcut-text { flex: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .module-menu-trigger, .module-shortcut { transition: none !important; }
+        }
+        @media print {
+            /* La stampa deve mostrare SEMPRE l'intero report, anche se il Modulo 2 era compattato. */
+            .site-main { display: block !important; width: 100% !important; }
+            #outputPanel { width: 100% !important; }
+            .module-shortcut { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-gdf-lightbg text-slate-800 min-h-screen font-sans flex flex-col">
@@ -207,6 +300,8 @@
                 </div>
             </div>
             
+            <!-- Controlli del portale: API Key + menu a comparsa Moduli -->
+            <div class="header-controls flex flex-wrap items-center justify-end gap-3">
             <!-- Configurazione API Key -->
             <div class="flex items-center space-x-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
                 <i class="fa-solid fa-key text-gdf-gold text-sm"></i>
@@ -215,6 +310,35 @@
                 <button onclick="saveApiKey()" class="bg-gdf-gold hover:bg-yellow-600 text-gdf-blue font-bold text-xs px-3 py-1.5 rounded transition">
                     Salva
                 </button>
+            </div>
+
+            <!-- Menu di navigazione fra i due moduli, in alto a destra -->
+            <nav class="module-selector no-print" id="moduleSelector" aria-label="Selezione modulo">
+                <button type="button" id="moduleMenuButton" class="module-menu-trigger"
+                        onclick="toggleModuleMenu()" aria-controls="moduleMenu" aria-expanded="false" aria-haspopup="true">
+                    <i class="fa-solid fa-layer-group text-gdf-gold"></i>
+                    <span id="activeModuleLabel">Vista affiancata</span>
+                    <i class="fa-solid fa-chevron-down text-gdf-gold text-[10px]" aria-hidden="true"></i>
+                </button>
+                <div id="moduleMenu" class="module-menu-panel" hidden>
+                    <div class="module-menu-caption">Navigazione portale</div>
+                    <button type="button" class="module-choice is-active" data-module-view="both" onclick="setModuleView('both')" aria-pressed="true">
+                        <span class="module-choice-icon"><i class="fa-solid fa-table-columns"></i></span>
+                        <span><span class="module-choice-title">Vista affiancata</span><span class="module-choice-subtitle">Visualizza entrambi i moduli</span></span>
+                        <i class="fa-solid fa-check module-check" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="module-choice" data-module-view="module-1" onclick="setModuleView('module-1')" aria-pressed="false">
+                        <span class="module-choice-icon"><i class="fa-solid fa-folder-open"></i></span>
+                        <span><span class="module-choice-title">Modulo 1 · Quadro fattuale</span><span class="module-choice-subtitle">Amplia input e allegati</span></span>
+                        <i class="fa-solid fa-check module-check" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="module-choice" data-module-view="module-2" onclick="setModuleView('module-2')" aria-pressed="false">
+                        <span class="module-choice-icon"><i class="fa-solid fa-file-contract"></i></span>
+                        <span><span class="module-choice-title">Modulo 2 · Report analitico</span><span class="module-choice-subtitle">Amplia il report e la conversazione</span></span>
+                        <i class="fa-solid fa-check module-check" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </nav>
             </div>
         </div>
     </header>
@@ -237,7 +361,11 @@
     <main class="site-main max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- Pannello Input Operatore (Sinistra) -->
-        <section class="site-panel lg:col-span-5 bg-white p-5 rounded-xl shadow-md border border-slate-200 flex flex-col no-print">
+        <section id="inputPanel" class="site-panel module-card lg:col-span-5 bg-white p-5 rounded-xl shadow-md border border-slate-200 flex flex-col no-print">
+            <button type="button" class="module-shortcut" onclick="setModuleView('module-1')" aria-label="Espandi il Modulo 1: Quadro fattuale e allegati">
+                <span class="module-shortcut-icon"><i class="fa-solid fa-folder-open"></i></span>
+                <span class="module-shortcut-text"><span class="module-shortcut-kicker block">MODULO 1</span><span class="module-shortcut-title block">Quadro fattuale e allegati</span><span class="module-shortcut-open block mt-2">Apri modulo <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></span></span>
+            </button>
             <h2 class="text-lg font-bold text-gdf-blue mb-2 flex items-center gap-2">
                 <i class="fa-solid fa-folder-open text-gdf-gold"></i>
                 Quadro Fattuale e Allegati
@@ -314,7 +442,11 @@
         </section>
 
         <!-- Pannello Output Report (Destra) -->
-        <section class="site-panel lg:col-span-7 bg-white p-6 rounded-xl shadow-md border border-slate-200 flex flex-col print-container">
+        <section id="outputPanel" class="site-panel module-card lg:col-span-7 bg-white p-6 rounded-xl shadow-md border border-slate-200 flex flex-col print-container">
+            <button type="button" class="module-shortcut no-print" onclick="setModuleView('module-2')" aria-label="Espandi il Modulo 2: Report analitico-operativo">
+                <span class="module-shortcut-icon"><i class="fa-solid fa-file-contract"></i></span>
+                <span class="module-shortcut-text"><span class="module-shortcut-kicker block">MODULO 2</span><span class="module-shortcut-title block">Report analitico-operativo</span><span class="module-shortcut-open block mt-2">Apri modulo <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></span></span>
+            </button>
             <!-- Barra Azioni Report -->
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-200 no-print">
                 <h2 class="text-lg font-bold text-gdf-blue flex items-center gap-2">
@@ -448,6 +580,65 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
 5. Raccomandazioni Operative (Proposte concrete sui prossimi passi per blindare il quadro probatorio)
         `;
 
+
+
+        // ================= NAVIGAZIONE FRA I DUE MODULI =================
+        // Modifica soltanto l'impaginazione. Non cancella i dati e non interrompe Gemini/Firebase.
+        const MODULE_VIEW_KEY = 'eco_nomy_module_view';
+
+        function toggleModuleMenu() {
+            const menu = document.getElementById('moduleMenu');
+            const button = document.getElementById('moduleMenuButton');
+            const open = menu.hidden;
+            menu.hidden = !open;
+            button.setAttribute('aria-expanded', String(open));
+        }
+
+        function closeModuleMenu() {
+            const menu = document.getElementById('moduleMenu');
+            menu.hidden = true;
+            document.getElementById('moduleMenuButton').setAttribute('aria-expanded', 'false');
+        }
+
+        function setModuleView(view, persist = true) {
+            if (!['both', 'module-1', 'module-2'].includes(view)) view = 'both';
+            const main = document.querySelector('.site-main');
+            const left = document.getElementById('inputPanel');
+            const right = document.getElementById('outputPanel');
+            main.classList.toggle('view-module-1', view === 'module-1');
+            main.classList.toggle('view-module-2', view === 'module-2');
+            left.classList.toggle('is-collapsed', view === 'module-2');
+            right.classList.toggle('is-collapsed', view === 'module-1');
+            document.getElementById('activeModuleLabel').textContent = ({
+                'both': 'Vista affiancata',
+                'module-1': 'Modulo 1',
+                'module-2': 'Modulo 2'
+            })[view];
+            document.querySelectorAll('[data-module-view]').forEach(choice => {
+                const selected = choice.dataset.moduleView === view;
+                choice.classList.toggle('is-active', selected);
+                choice.setAttribute('aria-pressed', String(selected));
+            });
+            if (persist) {
+                try { localStorage.setItem(MODULE_VIEW_KEY, view); } catch (e) { /* navigazione disponibile comunque */ }
+            }
+            closeModuleMenu();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let lastView = 'both';
+            try { lastView = localStorage.getItem(MODULE_VIEW_KEY) || 'both'; } catch (e) {}
+            setModuleView(lastView, false);
+            document.addEventListener('click', event => {
+                if (!document.getElementById('moduleSelector').contains(event.target)) closeModuleMenu();
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !document.getElementById('moduleMenu').hidden) {
+                    closeModuleMenu();
+                    document.getElementById('moduleMenuButton').focus();
+                }
+            });
+        });
 
         // ---------- CONVERSAZIONI RECENTI (solo localStorage di questo browser) ----------
         const HISTORY_KEY = 'gdf_analisi_recenti';
