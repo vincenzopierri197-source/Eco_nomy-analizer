@@ -1,0 +1,45 @@
+
+name: Pulisci condivisioni scadute
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Solo simulazione (non cancella nulla)'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup-expired-shares
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run && 'true' || 'false' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements-cleanup.txt
+
+      - name: Installa dipendenze
+        run: pip install -r requirements-cleanup.txt
+
+      - name: Pulisci i documenti scaduti
+        run: python scripts/cleanup_expired_shares.py
