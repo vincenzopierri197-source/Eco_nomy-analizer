@@ -265,6 +265,82 @@
             .gem-fab {right:15px;bottom:18px;width:64px;height:64px;}
             .gem-fab-label {display:none;}
         }
+
+        /* =============== VISTA INTERATTIVA DEI DUE MODULI =============== */
+        .portal-command { overflow:visible; z-index:12; }
+        .portal-command::before { border-radius:inherit; }
+        .portal-command-side {display:flex;flex-direction:column;align-items:flex-end;gap:15px;min-width:0;}
+        .module-switcher {position:relative;display:flex;align-items:center;gap:10px;isolation:isolate;}
+        .module-switcher-label {color:#b5cbda;font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;white-space:nowrap;}
+        .module-switcher-trigger {display:flex;align-items:center;justify-content:space-between;gap:11px;min-width:183px;padding:10px 12px;border:1px solid rgba(234,212,138,.53);border-radius:11px;background:rgba(5,21,37,.64);color:#fff;box-shadow:inset 0 1px rgba(255,255,255,.055);font-size:12px;font-weight:750;transition:background .18s,border-color .18s;}
+        .module-switcher-trigger:hover,.module-switcher-trigger[aria-expanded=true] {background:rgba(20,69,94,.85);border-color:var(--gold-light);}
+        .module-switcher-trigger .fa-table-columns {color:#e9c868;}
+        .module-switcher-trigger .fa-chevron-down {color:#aac3d4;font-size:10px;transition:transform .2s;}
+        .module-switcher-trigger[aria-expanded=true] .fa-chevron-down {transform:rotate(180deg);}
+        .module-view-menu {position:absolute;right:0;top:calc(100% + 9px);z-index:30;width:min(300px,calc(100vw - 28px));padding:7px;background:#09223c;border:1px solid rgba(234,212,138,.45);border-radius:13px;box-shadow:0 18px 35px rgba(1,12,25,.44);}
+        .module-view-menu[hidden] {display:none !important;}
+        .module-view-choice {display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:9px;background:transparent;color:#d9e9f2;text-align:left;transition:background .15s;}
+        .module-view-choice:hover,.module-view-choice:focus-visible {background:rgba(94,201,211,.12);}
+        .module-view-choice[aria-checked=true] {background:rgba(212,175,55,.14);color:#fff;}
+        .module-view-choice .choice-icon {display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;border-radius:9px;background:rgba(255,255,255,.06);color:#e6c56b;}
+        .module-view-choice .choice-text {display:flex;flex-direction:column;gap:3px;min-width:0;}
+        .module-view-choice .choice-title {font-size:12px;font-weight:800;}
+        .module-view-choice .choice-subtitle {color:#a9c3d4;font-size:10px;line-height:1.35;}
+        .module-view-choice .choice-check {font-size:12px;color:#e7c56e;opacity:0;margin-left:auto;}
+        .module-view-choice[aria-checked=true] .choice-check {opacity:1;}
+        .site-main {transition:grid-template-columns .28s ease;}
+        .site-main[data-view=input] {grid-template-columns:minmax(0,1fr) 86px;}
+        .site-main[data-view=report] {grid-template-columns:86px minmax(0,1fr);}
+        .site-main[data-view=input] .report-panel,
+        .site-main[data-view=report] .input-panel {padding:0;min-height:0;border-color:#b9a15d;background:linear-gradient(180deg,#0b2846,#113a5e);box-shadow:0 10px 28px rgba(6,25,44,.17);}
+        .site-main[data-view=input] .report-panel > :not(.compact-module-trigger),
+        .site-main[data-view=report] .input-panel > :not(.compact-module-trigger) {display:none !important;}
+        .compact-module-trigger {display:none;position:relative;flex-direction:column;align-items:center;justify-content:flex-start;gap:19px;width:100%;height:100%;min-height:340px;padding:24px 7px;color:#fff;text-align:center;cursor:pointer;transition:background .2s;}
+        .compact-module-trigger:hover {background:rgba(94,201,211,.13);}
+        .compact-module-trigger .compact-symbol {display:grid;place-items:center;width:43px;height:43px;border:1px solid rgba(234,212,138,.5);border-radius:12px;background:rgba(212,175,55,.11);color:#e8c66c;font-size:18px;}
+        .compact-module-trigger .compact-caption {font-size:10px;font-weight:900;letter-spacing:.16em;color:#e8c66c;}
+        .compact-module-trigger .compact-title {font-size:13px;font-weight:800;letter-spacing:.065em;line-height:1.35;writing-mode:vertical-rl;transform:rotate(180deg);}
+        .compact-module-trigger .compact-open {font-size:10px;color:#c2deee;font-weight:650;}
+        .compact-module-trigger .compact-open i {display:block;margin-bottom:8px;color:#e8c66c;font-size:15px;}
+        .site-main[data-view=input] .report-panel > .compact-module-trigger,
+        .site-main[data-view=report] .input-panel > .compact-module-trigger {display:flex;}
+        .site-main[data-view=input] .input-panel,
+        .site-main[data-view=report] .report-panel {border-color:#b6cbdc;box-shadow:0 14px 30px rgba(6,33,57,.12);}
+        @media(max-width:1120px) {
+            .portal-command-side {width:100%;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+            .module-switcher-label {font-size:9px;}
+        }
+        @media(max-width:960px) {
+            .site-main[data-view=input],.site-main[data-view=report] {grid-template-columns:minmax(0,1fr);}
+            .site-main[data-view=input] .report-panel,.site-main[data-view=report] .input-panel {min-height:0;}
+            .site-main[data-view=input] .input-panel,.site-main[data-view=report] .report-panel {order:0;}
+            .site-main[data-view=input] .report-panel,.site-main[data-view=report] .input-panel {order:1;}
+            .portal-command {order:-1;}
+            .compact-module-trigger {min-height:68px;height:auto;padding:12px 16px;flex-direction:row;gap:13px;justify-content:flex-start;}
+            .compact-module-trigger .compact-symbol {width:35px;height:35px;flex:0 0 auto;font-size:15px;}
+            .compact-module-trigger .compact-caption {font-size:9px;}
+            .compact-module-trigger .compact-title {writing-mode:horizontal-tb;transform:none;font-size:12px;letter-spacing:0;}
+            .compact-module-trigger .compact-open {margin-left:auto;white-space:nowrap;}
+            .compact-module-trigger .compact-open i {display:inline;margin:0 6px 0 0;}
+        }
+        @media(max-width:640px) {
+            .portal-command-side {gap:13px;}
+            .module-switcher {justify-content:space-between;width:100%;gap:8px;}
+            .module-switcher-trigger {min-width:168px;}
+            .module-switcher-label {white-space:normal;}
+            .compact-module-trigger .compact-caption {display:none;}
+        }
+        @media print {
+            .site-main[data-view=input],.site-main[data-view=report] {display:block !important;}
+            .site-main[data-view=input] .report-panel {display:block !important;min-height:0 !important;background:white !important;border:0 !important;padding:0 !important;box-shadow:none !important;}
+            .site-main[data-view=input] .report-panel > :not(.compact-module-trigger) {display:block !important;}
+            .site-main[data-view=input] .report-panel > #loader,
+            .site-main[data-view=input] .report-panel > #followUpBox,
+            .site-main[data-view=input] .report-panel > .report-infobar,
+            .site-main[data-view=input] .report-panel > .report-toolbar {display:none !important;}
+            .compact-module-trigger {display:none !important;}
+        }
+
         @media (prefers-reduced-motion:reduce) {*,*::before,*::after {scroll-behavior:auto !important;transition-duration:.01ms !important;animation-duration:.01ms !important;}}
         @media print {
             body {background:#fff !important;color:#000 !important;}
@@ -329,15 +405,37 @@
                 <h2>Portale di analisi penal-tributaria</h2>
                 <p>Dal quadro fattuale alla valutazione probatoria, fino alla redazione del report.</p>
             </div>
-            <div class="portal-steps" aria-label="Fasi del flusso di lavoro">
-                <div class="portal-step"><span class="step-number">01</span><span class="step-word"><small>Input</small>Quadro fattuale</span></div>
-                <div class="portal-step"><span class="step-number">02</span><span class="step-word"><small>Metodo</small>Analisi giuridica</span></div>
-                <div class="portal-step"><span class="step-number">03</span><span class="step-word"><small>Output</small>Report operativo</span></div>
+            <div class="portal-command-side">
+                <!-- Menu a comparsa: seleziona il modulo in primo piano senza perdere i dati -->
+                <div class="module-switcher no-print" id="moduleSwitcher">
+                    <span class="module-switcher-label">Vista moduli</span>
+                    <button type="button" id="moduleViewToggle" class="module-switcher-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="moduleViewMenu">
+                        <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+                        <span id="moduleViewName">Entrambi i moduli</span>
+                        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="module-view-menu" id="moduleViewMenu" role="group" aria-label="Selezione modulo da espandere" hidden>
+                        <button type="button" class="module-view-choice" data-module-view="both" aria-checked="true" role="radio"><span class="choice-icon"><i class="fa-solid fa-table-columns"></i></span><span class="choice-text"><span class="choice-title">Entrambi i moduli</span><span class="choice-subtitle">Vista affiancata originale</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
+                        <button type="button" class="module-view-choice" data-module-view="input" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-folder-open"></i></span><span class="choice-text"><span class="choice-title">Modulo 01 · Quadro fattuale</span><span class="choice-subtitle">Spazio massimo per dati e allegati</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
+                        <button type="button" class="module-view-choice" data-module-view="report" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-file-contract"></i></span><span class="choice-text"><span class="choice-title">Modulo 02 · Report</span><span class="choice-subtitle">Spazio massimo per analisi e risultati</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+                <div class="portal-steps" aria-label="Fasi del flusso di lavoro">
+                    <div class="portal-step"><span class="step-number">01</span><span class="step-word"><small>Input</small>Quadro fattuale</span></div>
+                    <div class="portal-step"><span class="step-number">02</span><span class="step-word"><small>Metodo</small>Analisi giuridica</span></div>
+                    <div class="portal-step"><span class="step-number">03</span><span class="step-word"><small>Output</small>Report operativo</span></div>
+                </div>
             </div>
         </div>
 
         <!-- Pannello Input Operatore (Sinistra) -->
         <section id="quadro-fattuale" class="site-panel input-panel no-print" aria-labelledby="inputTitle">
+            <button type="button" class="compact-module-trigger" data-focus-module="input" aria-label="Espandi il Modulo 1: Quadro fattuale e allegati">
+                <span class="compact-symbol"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
+                <span class="compact-caption">MOD 01</span>
+                <span class="compact-title">Quadro fattuale</span>
+                <span class="compact-open"><i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i> Apri</span>
+            </button>
             <div class="panel-banner">
                 <div class="panel-banner-kicker">MODULO 01 / ACQUISIZIONE ELEMENTI</div>
                 <h2 id="inputTitle"><span class="panel-emblem"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>Quadro Fattuale e Allegati</h2>
@@ -414,6 +512,12 @@
 
         <!-- Pannello Output Report (Destra) -->
         <section id="report-operativo" class="site-panel report-panel print-container" aria-labelledby="reportTitle">
+            <button type="button" class="compact-module-trigger no-print" data-focus-module="report" aria-label="Espandi il Modulo 2: Report analitico-operativo">
+                <span class="compact-symbol"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+                <span class="compact-caption">MOD 02</span>
+                <span class="compact-title">Report operativo</span>
+                <span class="compact-open"><i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i> Apri</span>
+            </button>
             <!-- Barra azioni report: stessa funzionalità dei pulsanti originali -->
             <div class="report-toolbar no-print">
                 <div class="report-label">
@@ -1340,5 +1444,44 @@ ${body}
             });
         });
     </script>
+    <!-- Comando visualizzazione moduli: indipendente dalla logica Gemini/Firebase -->
+    <script>
+      (() => {
+        const workspace = document.getElementById('workspace');
+        const switcher = document.getElementById('moduleSwitcher');
+        const toggle = document.getElementById('moduleViewToggle');
+        const menu = document.getElementById('moduleViewMenu');
+        const name = document.getElementById('moduleViewName');
+        if (!workspace || !switcher || !toggle || !menu || !name) return;
+        const labels = { both: 'Entrambi i moduli', input: 'Modulo 01 · Quadro', report: 'Modulo 02 · Report' };
+        const choices = Array.from(menu.querySelectorAll('[data-module-view]'));
+
+        function closeMenu() {
+          menu.hidden = true;
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+        function changeView(view) {
+          if (!Object.prototype.hasOwnProperty.call(labels, view)) return;
+          workspace.dataset.view = view;
+          name.textContent = labels[view];
+          choices.forEach(button => button.setAttribute('aria-checked', String(button.dataset.moduleView === view)));
+          closeMenu();
+        }
+        toggle.addEventListener('click', () => {
+          const open = menu.hidden;
+          menu.hidden = !open;
+          toggle.setAttribute('aria-expanded', String(open));
+        });
+        choices.forEach(button => button.addEventListener('click', () => changeView(button.dataset.moduleView)));
+        document.querySelectorAll('[data-focus-module]').forEach(button =>
+          button.addEventListener('click', () => changeView(button.dataset.focusModule)));
+        document.addEventListener('click', event => { if (!switcher.contains(event.target)) closeMenu(); });
+        document.addEventListener('keydown', event => {
+          if (event.key === 'Escape' && !menu.hidden) { closeMenu(); toggle.focus(); }
+        });
+        changeView('both');
+      })();
+    </script>
+
 </body>
 </html>
