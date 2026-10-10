@@ -266,6 +266,29 @@
             .gem-fab-label {display:none;}
         }
 
+
+        /* === Controlli stand-by: riduzione del singolo modulo con il tasto – === */
+        .module-standby-btn {
+            display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+            width:35px;height:35px;min-width:35px;min-height:35px;padding:0;
+            border:1px solid rgba(162,190,208,.65);border-radius:9px;
+            background:#edf4f9;color:#244760;cursor:pointer;
+            box-shadow:0 2px 7px rgba(3,24,44,.07);
+            transition:background-color .16s,border-color .16s,transform .16s,box-shadow .16s;
+        }
+        .module-standby-btn .standby-glyph {font-family:Arial,sans-serif;font-weight:800;font-size:20px;line-height:1;transform:translateY(-1px);}
+        .module-standby-btn:hover {background:#dbeaf3;border-color:#99b4c7;transform:translateY(-1px);box-shadow:0 3px 9px rgba(3,24,44,.12);}
+        .panel-banner > .module-standby-btn {
+            position:absolute;z-index:2;right:17px;top:15px;
+            border-color:rgba(233,205,119,.55);background:rgba(7,23,43,.52);color:#f1d786;
+        }
+        .panel-banner > .module-standby-btn:hover {background:rgba(218,175,55,.18);border-color:#f1d786;}
+        .panel-banner .panel-banner-kicker {padding-right:43px;}
+        .report-actions .module-standby-btn {flex:0 0 35px;padding:0;min-height:35px;}
+        @media(max-width:640px) {
+            .report-actions .module-standby-btn {flex:0 0 35px;}
+        }
+
         /* =============== VISTA INTERATTIVA DEI DUE MODULI =============== */
         .portal-command { overflow:visible; z-index:12; }
         .portal-command::before { border-radius:inherit; }
@@ -437,6 +460,10 @@
                 <span class="compact-open"><i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i> Apri</span>
             </button>
             <div class="panel-banner">
+                <button type="button" class="module-standby-btn no-print" data-standby-module="input"
+                        title="Metti in stand-by il Modulo 1" aria-label="Riduci il Modulo 1 a barra laterale">
+                    <span class="standby-glyph" aria-hidden="true">−</span>
+                </button>
                 <div class="panel-banner-kicker">MODULO 01 / ACQUISIZIONE ELEMENTI</div>
                 <h2 id="inputTitle"><span class="panel-emblem"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>Quadro Fattuale e Allegati</h2>
                 <p>Inserisci gli elementi del caso o carica un documento. <strong>Utilizza esclusivamente dati preventivamente anonimizzati.</strong></p>
@@ -529,6 +556,10 @@
                     <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1"><i class="fa-solid fa-print"></i> Stampa / PDF</button>
                     <button onclick="exportDocs()" title="Scarica un documento apribile con Word e Google Docs" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1"><i class="fa-solid fa-file-word"></i> Docs</button>
                     <button onclick="openShareModal()" title="Condividi questa conversazione con un collega tramite codice" class="share-action transition flex items-center gap-1"><i class="fa-solid fa-share-nodes"></i> Condividi</button>
+                    <button type="button" class="module-standby-btn no-print" data-standby-module="report"
+                            title="Metti in stand-by il Modulo 2" aria-label="Riduci il Modulo 2 a barra laterale">
+                        <span class="standby-glyph" aria-hidden="true">−</span>
+                    </button>
                 </div>
             </div>
             <div class="report-infobar no-print" aria-label="Aree tematiche del report">
@@ -1475,6 +1506,12 @@ ${body}
         choices.forEach(button => button.addEventListener('click', () => changeView(button.dataset.moduleView)));
         document.querySelectorAll('[data-focus-module]').forEach(button =>
           button.addEventListener('click', () => changeView(button.dataset.focusModule)));
+        // Il trattino riduce soltanto il modulo scelto: l'altro si allarga.
+        // Nessun campo viene svuotato e le chiamate API in corso non vengono interrotte.
+        document.querySelectorAll('[data-standby-module]').forEach(button =>
+          button.addEventListener('click', () => {
+            changeView(button.dataset.standbyModule === 'input' ? 'report' : 'input');
+          }));
         document.addEventListener('click', event => { if (!switcher.contains(event.target)) closeMenu(); });
         document.addEventListener('keydown', event => {
           if (event.key === 'Escape' && !menu.hidden) { closeMenu(); toggle.focus(); }
