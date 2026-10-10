@@ -289,7 +289,7 @@
             .report-actions .module-standby-btn {flex:0 0 35px;}
         }
 
-        /* =============== VISTA INTERATTIVA DEI DUE MODULI =============== */
+        /* =============== VISTA INTERATTIVA DEI DUE MODULI · TRANSIZIONI FLUIDE =============== */
         .portal-command { overflow:visible; z-index:12; }
         .portal-command::before { border-radius:inherit; }
         .portal-command-side {display:flex;flex-direction:column;align-items:flex-end;gap:15px;min-width:0;}
@@ -311,9 +311,33 @@
         .module-view-choice .choice-subtitle {color:#a9c3d4;font-size:10px;line-height:1.35;}
         .module-view-choice .choice-check {font-size:12px;color:#e7c56e;opacity:0;margin-left:auto;}
         .module-view-choice[aria-checked=true] .choice-check {opacity:1;}
-        .site-main {transition:grid-template-columns .28s ease;}
-        .site-main[data-view=input] {grid-template-columns:minmax(0,1fr) 86px;}
-        .site-main[data-view=report] {grid-template-columns:86px minmax(0,1fr);}
+        /* Passaggio moduli: colonne espressi con track compatibili tra loro.
+           Evita lo scatto dovuto a una transizione tra fr e px non interpolabile. */
+        .site-main {
+            grid-template-columns:minmax(0, calc(41.666667% - 9.166667px)) minmax(0,1fr);
+            transition:grid-template-columns .72s cubic-bezier(.4,0,.2,1);
+        }
+        .site-main[data-view=input] {grid-template-columns:minmax(0,calc(100% - 108px)) minmax(0,1fr);}
+        .site-main[data-view=report] {grid-template-columns:minmax(0,86px) minmax(0,1fr);}
+        /* Dissolvenza coordinata: prima sfuma il contenuto precedente,
+           poi le colonne scorrono e il nuovo contenuto appare gradualmente. */
+        .site-main .site-panel > :not(.compact-module-trigger) {
+            transition:opacity .32s ease,transform .32s ease;
+        }
+        .site-main .compact-module-trigger {
+            transition:opacity .32s ease,transform .32s ease,background-color .2s ease;
+        }
+        .site-main.module-view-leaving .site-panel > :not(.compact-module-trigger),
+        .site-main.module-view-entering .site-panel > :not(.compact-module-trigger) {
+            opacity:0; transform:translateY(7px);pointer-events:none;
+        }
+        .site-main.module-view-leaving .compact-module-trigger,
+        .site-main.module-view-entering .compact-module-trigger {
+            opacity:0;pointer-events:none;
+        }
+        @media (min-width:961px) {
+            .site-main {grid-template-rows:auto minmax(690px,auto);}
+        }
         .site-main[data-view=input] .report-panel,
         .site-main[data-view=report] .input-panel {padding:0;min-height:0;border-color:#b9a15d;background:linear-gradient(180deg,#0b2846,#113a5e);box-shadow:0 10px 28px rgba(6,25,44,.17);}
         .site-main[data-view=input] .report-panel > :not(.compact-module-trigger),
@@ -334,6 +358,7 @@
             .module-switcher-label {font-size:9px;}
         }
         @media(max-width:960px) {
+            .site-main {grid-template-columns:minmax(0,1fr);transition:none;}
             .site-main[data-view=input],.site-main[data-view=report] {grid-template-columns:minmax(0,1fr);}
             .site-main[data-view=input] .report-panel,.site-main[data-view=report] .input-panel {min-height:0;}
             .site-main[data-view=input] .input-panel,.site-main[data-view=report] .report-panel {order:0;}
@@ -1667,12 +1692,44 @@ ${body}
           menu.hidden = true;
           toggle.setAttribute('aria-expanded', 'false');
         }
+        // Stato delle animazioni: i timer vecchi sono annullati se si cambia
+        // rapidamente modulo, evitando sovrapposizioni o pannelli bloccati.
+        let viewTimers = [];
+        let viewSequence = 0;
+        const motionReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+        function cancelViewTimers() {
+          viewTimers.forEach(window.clearTimeout);
+          viewTimers = [];
+        }
         function changeView(view) {
           if (!Object.prototype.hasOwnProperty.call(labels, view)) return;
-          workspace.dataset.view = view;
+          cancelViewTimers();
+          const sequence = ++viewSequence;
+          const sameView = workspace.dataset.view === view;
           name.textContent = labels[view];
           choices.forEach(button => button.setAttribute('aria-checked', String(button.dataset.moduleView === view)));
           closeMenu();
+          if (motionReduced.matches || sameView || !workspace.dataset.view) {
+            workspace.classList.remove('module-view-leaving','module-view-entering');
+            workspace.dataset.view = view;
+            return;
+          }
+          // 1. In uscita: dissolvenza di 120 ms senza spostare le colonne.
+          workspace.classList.remove('module-view-entering');
+          workspace.classList.add('module-view-leaving');
+          viewTimers.push(window.setTimeout(() => {
+            if (sequence !== viewSequence) return;
+            // 2. Movimento: ora tutti i pannelli sono invisibili e la griglia
+            // puo' animare la larghezza senza sfarfallare o far saltare il testo.
+            workspace.classList.remove('module-view-leaving');
+            workspace.classList.add('module-view-entering');
+            workspace.dataset.view = view;
+            // 3. Nuovi contenuti: emergono durante l'ultima parte dello scorrimento.
+            viewTimers.push(window.setTimeout(() => {
+              if (sequence !== viewSequence) return;
+              workspace.classList.remove('module-view-entering');
+            }, 250));
+          }, 120));
         }
         toggle.addEventListener('click', () => {
           const open = menu.hidden;
