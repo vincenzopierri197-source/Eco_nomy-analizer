@@ -374,6 +374,26 @@
             #outputArea {border:0 !important;padding:0 !important;overflow:visible !important;min-height:0 !important;}
             #outputArea .report-empty {display:none !important;}
         }
+    
+        /* Nuovo quadro fattuale: pulsante + e bozze locali recuperabili */
+        .factual-description-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+        .factual-description-heading .form-section-label{margin:0;flex:1;min-width:150px}
+        .factual-new-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:35px;border:1px solid #d8b552;border-radius:9px;background:linear-gradient(125deg,#102f4c,#174566);color:#f6d67b;font-size:11px;font-weight:800;letter-spacing:.01em;padding:8px 12px;white-space:nowrap;box-shadow:0 3px 9px rgba(5,29,51,.12);transition:transform .18s,box-shadow .18s,background .18s}
+        .factual-new-button:hover{background:linear-gradient(125deg,#164567,#23638c);box-shadow:0 5px 14px rgba(5,29,51,.23);transform:translateY(-1px)}
+        .factual-new-button:focus-visible{outline:3px solid #5ec9d3;outline-offset:2px}
+        .factual-new-button .fa-plus{font-size:11px}
+        .factual-drafts{margin-bottom:12px;padding:10px;border:1px solid #c9dce8;border-radius:10px;background:#f1f7fa}
+        .factual-drafts[hidden]{display:none !important}
+        .factual-drafts-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:11px;color:#174365;font-weight:800}
+        .factual-drafts-title small{font-size:10px;color:#71879b;font-weight:600}
+        .factual-drafts-list{display:flex;flex-direction:column;gap:5px}
+        .factual-draft-row{display:flex;align-items:center;gap:5px;border:1px solid #d7e5ed;border-radius:8px;background:white;padding:6px 7px}
+        .factual-draft-row.is-active{border-color:#d4af37;box-shadow:0 0 0 1px rgba(212,175,55,.22)}
+        .factual-draft-open{flex:1;min-width:0;text-align:left;color:#1d425f;font-size:11px;font-weight:700;line-height:1.4}
+        .factual-draft-open span{display:block;font-size:10px;color:#7890a2;font-weight:500}
+        .factual-draft-delete{flex:0 0 30px;min-height:30px;color:#8295a6;cursor:pointer;border-radius:6px}
+        .factual-draft-delete:hover{background:#fff0f0;color:#b43b48}
+        @media(max-width:440px){.factual-new-button{min-height:36px;padding:7px 10px;font-size:10px}.factual-description-heading .form-section-label{font-size:10px}}
     </style>
 </head>
 <body class="bg-gdf-lightbg text-slate-800 min-h-screen font-sans flex flex-col">
@@ -503,7 +523,12 @@
 
             <!-- Area di Testo Input -->
             <div class="flex-1 flex flex-col mb-4">
-                <label for="promptInput" class="form-section-label"><span class="mini-index">01.3</span> Descrizione del quadro fattuale</label>
+                <div class="factual-description-heading">
+                    <label for="promptInput" class="form-section-label"><span class="mini-index">01.3</span> Descrizione del quadro fattuale</label>
+                    <button type="button" class="factual-new-button no-print" id="newFactualCaseBtn" onclick="startNewFactualCase()" title="Apri un nuovo quadro fattuale senza eliminare quello corrente">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Nuovo quadro
+                    </button>
+                </div>
                 <textarea id="promptInput" placeholder="Es. Descrivi il caso fattuale da analizzare..." 
                           class="w-full flex-1 min-h-[180px] p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gdf-blue focus:border-transparent resize-none bg-slate-50 text-slate-800"></textarea>
             </div>
@@ -532,6 +557,10 @@
                 <button onclick="openCodeModal()" class="share-code-action w-full mb-3 text-gdf-blue hover:bg-blue-50 text-xs font-semibold transition">
                     <i class="fa-solid fa-key mr-1"></i> Apri conversazione condivisa (codice)
                 </button>
+                <div class="factual-drafts" id="factualDraftsSection" hidden>
+                    <div class="factual-drafts-title"><span><i class="fa-solid fa-note-sticky mr-1" aria-hidden="true"></i>Quadri in bozza</span><small>Salvati nel browser</small></div>
+                    <div id="factualDraftsList" class="factual-drafts-list"></div>
+                </div>
                 <div id="historyList" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
                 <div id="historyNote" class="mt-2"></div>
             </div>
@@ -691,6 +720,138 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
+        // --- Bozze dei quadri fattuali: distinte dalle conversazioni gia' analizzate ---
+        // Il testo rimane esclusivamente nel localStorage di questo browser.
+        // Gli allegati NON si possono archiviare in modo affidabile nel localStorage.
+        const FACTUAL_DRAFTS_KEY = 'gdf_quadri_fattuali_bozze_v1';
+        let activeFactualDraftId = null;
+        let factualAutosaveTimer = null;
+        const emptyReportMarkup = document.getElementById('outputArea').innerHTML;
+
+        function loadFactualDrafts() {
+            try {
+                const data = JSON.parse(localStorage.getItem(FACTUAL_DRAFTS_KEY) || '[]');
+                return Array.isArray(data) ? data.filter(d => d && typeof d.text === 'string') : [];
+            } catch { return []; }
+        }
+
+        function persistFactualDrafts(list) {
+            try { localStorage.setItem(FACTUAL_DRAFTS_KEY, JSON.stringify(list)); return true; }
+            catch (error) {
+                console.warn('Impossibile salvare il quadro fattuale in bozza:', error);
+                alert('Non è stato possibile salvare il testo in bozza nel browser. Il quadro fattuale non verrà svuotato. Controlla lo spazio disponibile o le impostazioni di archiviazione.');
+                return false;
+            }
+        }
+
+        function saveActiveFactualDraft() {
+            clearTimeout(factualAutosaveTimer);
+            const input = document.getElementById('promptInput');
+            const text = input.value;
+            if (!text.trim()) return true;
+            const original = currentConv && currentConv.messages && currentConv.messages[0] && currentConv.messages[0].text;
+            // Una conversazione gia' archiviata non richiede una seconda copia.
+            if (!activeFactualDraftId && text === original) return true;
+            const items = loadFactualDrafts();
+            const id = activeFactualDraftId || ('quadro_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+            const previous = items.find(item => item.id === id);
+            const heading = text.trim().replace(/\s+/g, ' ').slice(0, 84);
+            const draft = { id, ts: previous ? previous.ts : new Date().toISOString(),
+                updatedAt: new Date().toISOString(), title: heading, text };
+            const next = [draft, ...items.filter(item => item.id !== id)];
+            if (!persistFactualDrafts(next)) return false;
+            activeFactualDraftId = id;
+            renderFactualDrafts();
+            return true;
+        }
+
+        function renderFactualDrafts() {
+            const section = document.getElementById('factualDraftsSection');
+            const list = document.getElementById('factualDraftsList');
+            if (!section || !list) return;
+            const drafts = loadFactualDrafts();
+            section.hidden = drafts.length === 0;
+            list.innerHTML = drafts.map(d => {
+                const date = new Date(d.updatedAt || d.ts).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+                const active = activeFactualDraftId === d.id ? ' is-active' : '';
+                // Gli ID sono generati internamente. JSON.stringify li protegge per la funzione onclick.
+                const idArgument = JSON.stringify(String(d.id)).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                return `<div class="factual-draft-row${active}">
+                    <button type="button" class="factual-draft-open" onclick="openFactualDraft(${idArgument})" title="Riprendi questa descrizione">${escapeHtml(d.title || 'Nuovo quadro fattuale')}<span>Bozza · ${escapeHtml(date)}</span></button>
+                    <button type="button" class="factual-draft-delete" onclick="removeFactualDraft(${idArgument})" title="Elimina questa bozza" aria-label="Elimina bozza"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                </div>`;
+            }).join('');
+        }
+
+        function removeFactualDraft(id, askConfirmation = true) {
+            if (askConfirmation && !confirm('Eliminare definitivamente questa bozza dal browser?')) return;
+            const next = loadFactualDrafts().filter(d => d.id !== id);
+            if (!persistFactualDrafts(next)) return;
+            if (activeFactualDraftId === id) activeFactualDraftId = null;
+            renderFactualDrafts();
+        }
+
+        function allowLeavingCurrentAttachment() {
+            // Il file ancora non analizzato non viene archiviato con il testo della bozza.
+            return !selectedFileData || confirm('È presente un allegato selezionato. Il testo sarà salvato in bozza, ma per riutilizzare l’allegato dovrai caricarlo di nuovo. Vuoi continuare?');
+        }
+
+        function resetForNewFactualCase() {
+            currentConv = null;
+            activeFactualDraftId = null;
+            document.getElementById('promptInput').value = '';
+            document.getElementById('followUpInput').value = '';
+            document.getElementById('followUpBox').classList.add('hidden');
+            document.getElementById('followError').classList.add('hidden');
+            removeFile();
+            const outputArea = document.getElementById('outputArea');
+            outputArea.innerHTML = emptyReportMarkup;
+            outputArea.classList.remove('hidden');
+            renderHistory();
+            renderFactualDrafts();
+        }
+
+        function factualWorkspaceBusy() {
+            if (document.getElementById('submitBtn').disabled || document.getElementById('followBtn').disabled) {
+                alert('Attendi la conclusione dell’analisi in corso prima di aprire un nuovo quadro fattuale.');
+                return true;
+            }
+            return false;
+        }
+
+        function focusFactualPanel() {
+            const choice = document.querySelector('[data-module-view="input"]');
+            if (choice) choice.click();
+            document.getElementById('promptInput').focus();
+        }
+
+        function startNewFactualCase() {
+            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return;
+            if (!saveActiveFactualDraft()) return;
+            resetForNewFactualCase();
+            focusFactualPanel();
+        }
+
+        function openFactualDraft(id) {
+            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return;
+            if (!saveActiveFactualDraft()) return;
+            const draft = loadFactualDrafts().find(d => d.id === id);
+            if (!draft) { renderFactualDrafts(); return; }
+            resetForNewFactualCase();
+            activeFactualDraftId = draft.id;
+            document.getElementById('promptInput').value = draft.text;
+            renderFactualDrafts();
+            focusFactualPanel();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('promptInput').addEventListener('input', () => {
+                clearTimeout(factualAutosaveTimer);
+                factualAutosaveTimer = setTimeout(saveActiveFactualDraft, 450);
+            });
+            renderFactualDrafts();
+        });
+
         function loadHistory() {
             let list;
             try { list = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -747,6 +908,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function renderHistory() {
+            renderFactualDrafts();
             const box = document.getElementById('historyList');
             const list = loadHistory();
             renderHistoryNote(list.length);
@@ -799,8 +961,13 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function openHistory(id) {
+            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return;
+            if (!saveActiveFactualDraft()) return;
             const item = loadHistory().find(i => i.id === id);
             if (!item) return;
+            clearTimeout(factualAutosaveTimer);
+            activeFactualDraftId = null;
+            removeFile();
             currentConv = JSON.parse(JSON.stringify(item));
             document.getElementById('followError').classList.add('hidden');
             document.getElementById('promptInput').value = currentConv.messages[0]?.text === DEFAULT_PROMPT ? '' : (currentConv.messages[0]?.text || '');
@@ -817,8 +984,10 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function clearHistory() {
-            if (!confirm('Eliminare tutte le conversazioni salvate in questo browser?')) return;
-            try { localStorage.removeItem(HISTORY_KEY); } catch {}
+            if (!confirm('Eliminare tutte le analisi e le bozze dei quadri fattuali salvate in questo browser?')) return;
+            clearTimeout(factualAutosaveTimer);
+            try { localStorage.removeItem(HISTORY_KEY); localStorage.removeItem(FACTUAL_DRAFTS_KEY); } catch {}
+            activeFactualDraftId = null;
             currentConv = null;
             document.getElementById('followUpBox').classList.add('hidden');
             renderHistory();
@@ -875,8 +1044,12 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function clearInput() {
+            clearTimeout(factualAutosaveTimer);
+            // La bozza gia' salvata resta recuperabile; il prossimo testo sara' un'altra bozza.
+            activeFactualDraftId = null;
             document.getElementById('promptInput').value = '';
             removeFile();
+            renderFactualDrafts();
         }
 
         function copyReport() {
@@ -1046,6 +1219,9 @@ ${body}
                 conv.messages.push({ role: 'model', text: reply });
                 currentConv = conv;
                 saveConversation();
+                clearTimeout(factualAutosaveTimer);
+                if (activeFactualDraftId) removeFactualDraft(activeFactualDraftId, false);
+                activeFactualDraftId = null;
                 renderConversation();
             } catch (error) {
                 console.error(error);
