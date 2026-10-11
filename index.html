@@ -472,6 +472,16 @@
  #prPrintDocument .pr-pdf-footer{font-size:8.5pt;color:#64748b;margin-top:18pt;border-top:1px solid #ced7df;padding-top:7pt}
  @page{size:A4;margin:18mm 16mm 18mm 16mm}
 }
+
+/* Modulo 02: pannelli richiudibili senza distruggere i dati */
+.eco-foldable{position:relative}
+.eco-foldable.eco-folded > :not(.eco-fold-toggle):not(.vp-heading):not(.ct-head):not(.nv-head):not(.fc-head):not(.pr-head){display:none!important}
+.eco-fold-toggle{display:inline-flex;align-items:center;gap:8px;justify-content:center;border:1px solid #b6cbdc;background:#f5f9fc;color:#123554;border-radius:9px;padding:8px 12px;margin:10px 0;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s}
+.eco-fold-toggle:hover{background:#e7f0f7}
+.eco-fold-toggle:focus-visible{outline:3px solid #d4af37;outline-offset:2px}
+#outputArea.eco-folded{display:none!important}
+.eco-report-toggle{margin:0 0 12px 0}
+@media print{.eco-fold-toggle{display:none!important}.eco-foldable.eco-folded > :not(.eco-fold-toggle){display:block!important}#outputArea.eco-folded{display:block!important}}
 </style>
     <style>
 
@@ -1007,6 +1017,8 @@
                 <span class="info-chip"><i class="fa-solid fa-list-check"></i> Raccomandazioni operative</span>
             </div>
 
+            <button type="button" id="ecoReportFoldBtn" class="eco-fold-toggle eco-report-toggle no-print" aria-controls="outputArea" aria-expanded="true"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i> Chiudi risposta principale</button>
+
             <!-- Area Risultato -->
             <div id="outputArea" class="flex-1 overflow-y-auto prose max-w-none text-slate-700">
                 <div class="report-empty">
@@ -1025,8 +1037,9 @@
             </div>
 
             <!-- Verificatore: controllo locale o seconda lettura critica soltanto su comando. -->
-            <section id="vpRoot" class="vp-root no-print" aria-label="Verificatore giuridico-probatorio" hidden>
+            <section id="vpRoot" class="eco-foldable vp-root no-print" aria-label="Verificatore giuridico-probatorio" hidden>
               <div class="vp-heading"><span class="vp-emblem"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><div><h3>Verificatore giuridico-probatorio</h3><p>Seconda lettura critica · Riscontri documentali verificabili · Nessuna modifica automatica del report</p></div></div>
+              <button type="button" class="eco-fold-toggle" data-eco-fold="vpRoot" aria-controls="vpRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="vp-body">
                 <p class="vp-note">Attivazione manuale, dopo il report. Il controllo locale confronta documenti e pagine con l’indice PDF sul Mac; non certifica la correttezza giuridica. La seconda analisi con Gemini richiede un invio separato e una tua conferma.</p>
                 <div class="vp-actions">
@@ -1041,8 +1054,9 @@
 
 
             <!-- Contraddittorio: analisi alternativa indipendente, solo dopo comando esplicito. -->
-            <section id="ctRoot" class="ct-root no-print" aria-label="Modalità contraddittorio" hidden>
+            <section id="ctRoot" class="eco-foldable ct-root no-print" aria-label="Modalità contraddittorio" hidden>
               <div class="ct-head"><span class="ct-badge-icon"><i class="fa-solid fa-people-arrows-left-right" aria-hidden="true"></i></span><div><h3>Modalità Contraddittorio</h3><p>Ipotesi alternative · Circostanze a favore · Critica delle conclusioni</p></div></div>
+              <button type="button" class="eco-fold-toggle" data-eco-fold="ctRoot" aria-controls="ctRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="ct-body">
                 <p class="ct-note">Una lettura distinta dal Verificatore. Esamina il report anche da una prospettiva alternativa, senza presumere responsabilità o innocenza. Non modifica il report e non verifica autonomamente atti, norme o giurisprudenza.</p>
                 <div class="ct-actions">
@@ -1056,8 +1070,9 @@
 
 
             <!-- Quinto controllo: consultazione ufficiale e versioni storiche, senza dichiarare certificazioni automatiche. -->
-            <section id="nvRoot" class="nv-root no-print" aria-label="Controllo della normativa vigente" hidden>
+            <section id="nvRoot" class="eco-foldable nv-root no-print" aria-label="Controllo della normativa vigente" hidden>
               <div class="nv-head"><span class="nv-head-icon"><i class="fa-solid fa-landmark" aria-hidden="true"></i></span><div><h3>Controllo della normativa vigente</h3><p>Normattiva · Versione alla data del fatto · Storia delle modifiche · Riscontro documentato</p></div></div>
+              <button type="button" class="eco-fold-toggle" data-eco-fold="nvRoot" aria-controls="nvRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="nv-body">
                 <p class="nv-note"><strong>Controllo assistito su fonti ufficiali.</strong> eco-nomy individua le norme nel report e prepara collegamenti a Normattiva. Per motivi tecnici non legge né certifica automaticamente il contenuto di Normattiva: apri i collegamenti, confronta la versione alla data dei fatti con quella odierna e registra l'esito. Una sinossi non costituisce normativa vigente.</p>
                 <div class="nv-date-box"><label for="nvFactDate"><i class="fa-regular fa-calendar"></i> Data del fatto</label><input id="nvFactDate" type="date" aria-describedby="nvDateHelp"><span id="nvDateHelp" class="nv-sub">Inseriscila tu: non viene dedotta automaticamente dal quadro fattuale.</span></div>
@@ -1083,8 +1098,9 @@
 
 
             <!-- Fascicolo digitale: versioni e confronto in archivio locale, nessuna richiesta AI. -->
-            <section id="fcRoot" class="fc-root no-print" aria-label="Fascicolo digitale e cronologia del caso" hidden>
+            <section id="fcRoot" class="eco-foldable fc-root no-print" aria-label="Fascicolo digitale e cronologia del caso" hidden>
               <div class="fc-head"><span class="fc-head-icon"><i class="fa-solid fa-folder-tree" aria-hidden="true"></i></span><div><h3>Fascicolo digitale e cronologia del caso</h3><p>Versioni successive · Fatti aggiunti · Ipotesi cambiate · Questioni aperte</p></div></div>
+              <button type="button" class="eco-fold-toggle" data-eco-fold="fcRoot" aria-controls="fcRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="fc-body">
                 <p class="fc-info"><strong>Archivio locale indipendente dalla cronologia delle conversazioni.</strong> Le istantanee sono salvate in IndexedDB nel browser di questo dispositivo, senza API e senza caricare PDF. La funzione confronta <strong>differenze testuali</strong> e note inserite dall'operatore: non certifica fatti, prove o ricostruzioni giuridiche. Per non perdere i dati, esporta regolarmente il fascicolo.</p>
                 <div class="fc-bar"><button id="fcSave" type="button" class="fc-btn fc-primary"><i class="fa-solid fa-camera"></i> Salva versione</button><button id="fcExport" type="button" class="fc-btn"><i class="fa-solid fa-file-export"></i> Esporta backup JSON</button><button id="fcImport" type="button" class="fc-btn"><i class="fa-solid fa-file-import"></i> Importa backup JSON</button><input id="fcImportFile" type="file" accept=".json,application/json" hidden><button id="fcRestore" type="button" class="fc-btn fc-btn-gold"><i class="fa-solid fa-rotate-left"></i> Riprendi versione come nuovo caso</button></div>
@@ -1108,8 +1124,9 @@
             </section>
 
             <!-- Settima funzione: esportazione strutturata PDF (stampa locale) / Word DOCX reale -->
-            <section id="prRoot" class="pr-root no-print" aria-label="Report professionale con riferimenti verificabili" hidden>
+            <section id="prRoot" class="eco-foldable pr-root no-print" aria-label="Report professionale con riferimenti verificabili" hidden>
               <div class="pr-head"><span class="pr-icon"><i class="fa-solid fa-file-circle-check" aria-hidden="true"></i></span><div><h3>Report professionale e fonti verificabili</h3><p>PDF A4 · Word .docx modificabile · Fatti distinti dalle valutazioni · Fonti rintracciabili</p></div></div>
+              <button type="button" class="eco-fold-toggle" data-eco-fold="prRoot" aria-controls="prRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="pr-body">
                 <p class="pr-desc"><strong>Documento di lavoro, non atto ufficiale.</strong> Il report separa quanto dichiarato dall'operatore dalle valutazioni dell'AI, elenca sinossi e pagine rintracciabili, segnala i controlli normativi non conclusi e riepiloga le questioni aperte. L'esportazione avviene sul dispositivo, senza nuove chiamate API.</p>
                 <div class="pr-options">
@@ -1742,6 +1759,8 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
 ${body}
 <hr>
 <p style="font-size:8pt;color:#64748b;">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
+
+
 </body></html>`;
 
             const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
@@ -3610,6 +3629,32 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  for(const i of ['prIncludeFacts','prIncludeAudit','prIncludeQuestions','prIncludeAlt'])$(i).addEventListener('change',()=>{if(!$('prPreview').hidden)preview();});
  window.addEventListener('afterprint',()=>{const sheet=$('prPrintDocument');if(sheet)sheet.remove();});
  window.ecoNomyProfessionalReport={refresh,preview,pdf,word,build};refresh();
+})();
+</script>
+<script>
+/* Stato UI indipendente dal report e dai dati: nessun contenuto viene eliminato. */
+(function(){
+ const names={vpRoot:'Verificatore giuridico-probatorio',ctRoot:'Contraddittorio',nvRoot:'Controllo normativa vigente',fcRoot:'Fascicolo digitale',prRoot:'Report professionale'};
+ function setFold(el,button,closed,label){
+   el.classList.toggle('eco-folded',closed);
+   button.setAttribute('aria-expanded',String(!closed));
+   button.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(closed?'Apri ':'Chiudi ')+label;
+ }
+ function init(){
+   Object.keys(names).forEach(id=>{
+     const el=document.getElementById(id),btn=document.querySelector('[data-eco-fold="'+id+'"]');
+     if(!el||!btn)return;
+     setFold(el,btn,true,'pannello');
+     btn.addEventListener('click',()=>setFold(el,btn,!el.classList.contains('eco-folded'),'pannello'));
+   });
+   const out=document.getElementById('outputArea'),btn=document.getElementById('ecoReportFoldBtn');
+   if(out&&btn){
+     const apply=closed=>{out.classList.toggle('eco-folded',closed);btn.setAttribute('aria-expanded',String(!closed));btn.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(closed?'Apri':'Chiudi')+' risposta principale';};
+     apply(false);
+     btn.addEventListener('click',()=>apply(!out.classList.contains('eco-folded')));
+   }
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
 </body>
