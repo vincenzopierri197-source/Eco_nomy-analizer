@@ -19,6 +19,8 @@
     <meta name="msapplication-TileImage" content="icona/mstile-150x150.png">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js per la lettura locale dei PDF nel browser (solo libreria, non i documenti). -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Marked.js per il parsing del Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- FontAwesome per le icone -->
@@ -319,6 +321,17 @@
         }
         .site-main[data-view=input] {grid-template-columns:minmax(0,calc(100% - 108px)) minmax(0,1fr);}
         .site-main[data-view=report] {grid-template-columns:minmax(0,86px) minmax(0,1fr);}
+        /* La Biblioteca è una vista del menu, non una sezione aggiunta sotto i moduli. */
+        .site-main > .kb-module {display:none;}
+        .site-main[data-view=library] {grid-template-columns:minmax(0,1fr);}
+        .site-main[data-view=library] > .site-panel {display:none !important;}
+        .site-main[data-view=library] > .kb-module {display:block;grid-column:1 / -1;animation:kb-module-enter .35s ease both;}
+        @keyframes kb-module-enter {from{opacity:.25;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+        @media(prefers-reduced-motion:reduce){.site-main[data-view=library] > .kb-module{animation:none;}}
+        @media print {
+            .site-main[data-view=library] > .report-panel {display:block !important;}
+            .site-main[data-view=library] > .kb-module {display:none !important;}
+        }
         /* Dissolvenza coordinata: prima sfuma il contenuto precedente,
            poi le colonne scorrono e il nuovo contenuto appare gradualmente. */
         .site-main .site-panel > :not(.compact-module-trigger) {
@@ -420,6 +433,89 @@
         .factual-draft-delete:hover{background:#fff0f0;color:#b43b48}
         @media(max-width:440px){.factual-new-button{min-height:36px;padding:7px 10px;font-size:10px}.factual-description-heading .form-section-label{font-size:10px}}
     </style>
+    <style>
+
+/* MODULO 03 — Biblioteca Giuridica. Stili locali, non altera i Moduli 01/02. */
+.kb-quick {display:inline-flex;align-items:center;gap:9px;padding:10px 15px;border:1px solid rgba(237,211,136,.5);background:rgba(212,175,55,.14);border-radius:10px;font-size:12px;color:#fae7aa;font-weight:800;cursor:pointer;transition:.2s;white-space:nowrap;}
+.kb-quick:hover,.kb-quick:focus-visible{background:rgba(212,175,55,.24);outline-color:#efd480;}
+.kb-module{grid-column:1/-1;min-width:0;overflow:hidden;border:1px solid #cbd9e4;border-radius:18px;background:#fff;box-shadow:0 13px 32px rgba(9,35,64,.09);color:#173851;scroll-margin-top:20px;}
+.kb-module[open]{box-shadow:0 16px 42px rgba(9,35,64,.12);}
+.kb-module>summary{list-style:none;cursor:pointer;position:relative;padding:20px 25px;display:flex;justify-content:space-between;align-items:center;gap:20px;background:linear-gradient(109deg,#0b2949,#114368);color:#fff;border-bottom:3px solid #d4af37;}
+.kb-module>summary::-webkit-details-marker{display:none;}
+.kb-summary-left{display:flex;align-items:center;gap:14px;}
+.kb-num{background:#d4af3726;border:1px solid #d4af376e;color:#f4d987;padding:11px 12px;border-radius:10px;font-weight:900;font-size:12px;white-space:nowrap;}
+.kb-ttl{font-weight:900;font-size:20px;line-height:1.24;letter-spacing:-.02em;display:block;}
+.kb-subttl{font-size:11px;color:#c2d6e5;display:block;margin-top:5px;line-height:1.45;}
+.kb-caret{font-size:20px;color:#f2d98d;transition:transform .2s;}
+.kb-module[open] .kb-caret{transform:rotate(180deg);}
+.kb-content{padding:22px 25px 23px;}
+.kb-intro{font-size:12px;line-height:1.75;color:#48677e;max-width:970px;}
+.kb-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:17px 0 12px;}
+.kb-btn{font-family:inherit;cursor:pointer;border:1px solid #c5d5e2;padding:11px 15px;border-radius:10px;background:#fff;color:#184662;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;line-height:1.2;transition:background .18s,box-shadow .18s;}
+.kb-btn:hover{background:#eaf3fa;border-color:#7faebf;}
+.kb-btn:focus-visible{outline:3px solid rgba(19,142,177,.35);outline-offset:2px;}
+.kb-btn-primary{background:linear-gradient(110deg,#0b2949,#17567c);color:#fff;border-color:#174d6d;box-shadow:0 5px 11px #0b29491c;}
+.kb-btn-primary:hover{background:#155679;color:white;}
+.kb-btn-gold{background:#d4af37;border-color:#c39c32;color:#102d42;}
+.kb-btn-gold:hover{background:#f0cc68;}
+.kb-btn[disabled]{opacity:.6;cursor:wait;}
+.kb-stats{display:flex;gap:9px;flex-wrap:wrap;margin:11px 0 18px;}
+.kb-stat{display:flex;align-items:baseline;gap:6px;border:1px solid #e1e9ef;background:#f5f8fb;border-radius:9px;padding:8px 13px;font-size:11px;color:#5f7a8e;}
+.kb-stat b{font-size:17px;color:#0b2949;font-weight:900;}
+.kb-status{font-size:11px;color:#50728b;line-height:1.55;min-height:20px;}
+.kb-progress-track{height:6px;border-radius:6px;background:#e6edf3;overflow:hidden;max-width:680px;margin:7px 0 9px;}
+.kb-progress-track div{height:100%;background:linear-gradient(90deg,#c79d37,#40b9c1);width:0;transition:width .16s;}
+.kb-progress-track[hidden]{display:none;}
+.kb-grid{display:grid;grid-template-columns:minmax(210px,255px) minmax(0,1fr);gap:18px;align-items:start;}
+.kb-side{border:1px solid #e1eaf1;border-radius:12px;background:linear-gradient(150deg,#f7fafc,#eff5f9);min-width:0;overflow:hidden;}
+.kb-side-title{padding:15px 15px 10px;font-size:12px;font-weight:850;color:#153a57;border-bottom:1px solid #e3ebf2;}
+.kb-docs{max-height:365px;overflow-y:auto;padding:8px;}
+.kb-doc{display:flex;width:100%;flex-direction:column;align-items:flex-start;text-align:left;gap:3px;border:1px solid transparent;background:transparent;border-radius:8px;color:#2d536f;padding:10px 9px;cursor:pointer;font-size:11px;line-height:1.4;overflow-wrap:anywhere;}
+.kb-doc:hover,.kb-doc[aria-pressed=true]{border-color:#aeceda;background:#fff;}
+.kb-doc small{color:#7894a6;font-size:10px;}
+.kb-doc-empty{font-size:11px;line-height:1.6;color:#728b9e;padding:12px 9px;}
+.kb-search-card{min-width:0;border:1px solid #e0e9ef;border-radius:13px;overflow:hidden;}
+.kb-search-header{padding:18px;background:#f9fbfd;border-bottom:1px solid #e5edf2;}
+.kb-search-title{font-size:16px;font-weight:850;color:#0d3553;}
+.kb-search-row{display:flex;gap:9px;margin-top:11px;align-items:stretch;flex-wrap:wrap;}
+.kb-search-row input{min-width:170px;flex:1;border:1px solid #cddae5;border-radius:9px;padding:11px 13px;background:#fff;font-size:13px;color:#142f45;outline:0;}
+.kb-search-row input:focus{border-color:#32aab8;box-shadow:0 0 0 3px #26c3d51b;}
+.kb-result-count{font-size:11px;color:#687f93;margin-top:10px;}
+.kb-results{padding:12px 16px 20px;max-height:670px;overflow-y:auto;min-height:165px;}
+.kb-empty{padding:34px 17px;text-align:center;color:#738b9c;font-size:12px;line-height:1.7;}
+.kb-empty i{display:block;font-size:28px;color:#9fb8c8;margin-bottom:10px;}
+.kb-result{padding:15px 0;border-bottom:1px solid #e7edf2;}
+.kb-result:last-child{border:0;}
+.kb-result-meta{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:850;color:#9a762b;}
+.kb-result h3{font-size:13px;font-weight:850;color:#183b58;margin:6px 0;overflow-wrap:anywhere;}
+.kb-snippet{font-size:12px;line-height:1.75;color:#4b6579;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 11px;max-height:145px;overflow:hidden;}
+.kb-result mark,.kb-pagetext mark{background:#fff0ad;padding:1px 2px;color:#4d3a08;border-radius:3px;}
+.kb-result-acts{display:flex;gap:7px;flex-wrap:wrap;}
+.kb-result-acts .kb-btn{font-size:10px;padding:7px 10px;border-radius:7px;}
+.kb-note{margin-top:15px;border:1px solid #ead9a9;background:#fffbef;color:#80632c;padding:12px 14px;border-radius:10px;font-size:11px;line-height:1.7;}
+.kb-visually-hidden{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+/* Lettore PDF interno: funziona senza aprire nuove schede. */
+.kb-overlay{position:fixed;inset:0;z-index:110;background:rgba(4,18,33,.75);padding:22px;display:flex;align-items:center;justify-content:center;}
+.kb-overlay[hidden]{display:none!important;}
+.kb-viewer{width:min(1140px,100%);height:min(90vh,920px);background:#f4f7fa;border:1px solid #7197ac;border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.4);}
+.kb-viewer-head{padding:13px 18px;background:#0a2946;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.kb-viewer-head h3{font-size:14px;line-height:1.4;font-weight:850;overflow-wrap:anywhere;}
+.kb-viewer-head p{font-size:10px;color:#c2d5e3;margin-top:4px;}
+.kb-viewer-toolbar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#e9f0f5;border-bottom:1px solid #cadbe5;flex-wrap:wrap;}
+.kb-viewer-toolbar .kb-btn{padding:8px 12px;}
+.kb-viewer-page{font-size:12px;font-weight:900;color:#1e4766;min-width:105px;text-align:center;}
+.kb-viewer-area{flex:1;min-height:0;overflow:auto;padding:15px;display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,295px);gap:13px;align-items:start;}
+.kb-canvas-wrapper{display:flex;justify-content:center;align-items:flex-start;min-height:300px;min-width:0;}
+#kbCanvas{max-width:100%;height:auto;background:white;box-shadow:0 6px 18px #0d2b4930;}
+.kb-pagetext-wrap{max-height:100%;overflow-y:auto;background:white;border-radius:9px;border:1px solid #dae5ed;padding:13px 14px;}
+.kb-pagetext-wrap h4{font-weight:850;font-size:12px;color:#123d5d;margin-bottom:9px;}
+.kb-pagetext{font-size:11px;line-height:1.7;color:#4e6a7b;white-space:pre-wrap;overflow-wrap:anywhere;}
+.kb-viewer-message{font-size:12px;color:#5f7e90;margin-bottom:8px;}
+@media (max-width:800px){.kb-grid{grid-template-columns:1fr;}.kb-docs{display:flex;gap:5px;max-height:130px;overflow-x:auto;}.kb-doc{min-width:170px;max-width:240px;}.kb-overlay{padding:8px;}.kb-viewer{height:96vh;}.kb-viewer-area{grid-template-columns:1fr;}.kb-pagetext-wrap{max-height:170px;}.kb-content{padding:16px;}.kb-module>summary{padding:16px;}}
+@media (max-width:550px){.kb-actions>.kb-btn{width:100%;}.kb-summary-left{gap:9px;}.kb-ttl{font-size:17px;}.kb-subttl{font-size:10px;}.kb-num{padding:8px;}.kb-search-row>.kb-btn{width:100%;}.kb-viewer-toolbar .kb-btn{font-size:10px;padding:7px;}.kb-viewer-page{min-width:75px;font-size:11px;}}
+@media print {.kb-module,.kb-overlay,.kb-quick{display:none!important;}}
+
+    </style>
 </head>
 <body class="bg-gdf-lightbg text-slate-800 min-h-screen font-sans flex flex-col">
 
@@ -456,7 +552,7 @@
             <span class="notice-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>
             <div class="flex-1">
                 <p><strong>Avvertenze sull'uso.</strong> Non caricare né incollare <strong>documenti riservati, atti coperti da segreto o dati identificativi di persone e procedimenti reali</strong>. Inserisci solo casi pratici, generici o anonimizzati.</p>
-                <p class="mt-1">Il testo e gli allegati vengono inviati ai server di Google (API Gemini) per essere elaborati: <strong>questa applicazione non lavora in locale sui contenuti</strong>. Per materiale riservato utilizza esclusivamente strumenti istituzionali autorizzati, che operano in locale o in ambienti protetti, oppure anonimizza il contenuto prima di inserirlo.</p>
+                <p class="mt-1">Il quadro fattuale e gli eventuali allegati vengono inviati ai server di Google quando premi <strong>Analizza e Genera Report</strong>. La <strong>Biblioteca Giuridica</strong> elabora invece i PDF direttamente nel browser, senza inviarli alle API; solo gli estratti che trasferisci volontariamente nel quadro fattuale saranno inclusi nella successiva richiesta a Gemini. Per materiale riservato utilizza esclusivamente strumenti autorizzati.</p>
             </div>
             <button onclick="document.getElementById('usageNotice').classList.add('hidden')" title="Nascondi (ricompare al prossimo caricamento)" class="text-amber-700 hover:text-amber-900 px-1">
                 <i class="fa-solid fa-xmark"></i>
@@ -479,13 +575,14 @@
                     <span class="module-switcher-label">Vista moduli</span>
                     <button type="button" id="moduleViewToggle" class="module-switcher-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="moduleViewMenu">
                         <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
-                        <span id="moduleViewName">Entrambi i moduli</span>
+                        <span id="moduleViewName" aria-live="polite">Entrambi i moduli</span>
                         <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                     </button>
                     <div class="module-view-menu" id="moduleViewMenu" role="group" aria-label="Selezione modulo da espandere" hidden>
                         <button type="button" class="module-view-choice" data-module-view="both" aria-checked="true" role="radio"><span class="choice-icon"><i class="fa-solid fa-table-columns"></i></span><span class="choice-text"><span class="choice-title">Entrambi i moduli</span><span class="choice-subtitle">Vista affiancata originale</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                         <button type="button" class="module-view-choice" data-module-view="input" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-folder-open"></i></span><span class="choice-text"><span class="choice-title">Modulo 01 · Quadro fattuale</span><span class="choice-subtitle">Spazio massimo per dati e allegati</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                         <button type="button" class="module-view-choice" data-module-view="report" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-file-contract"></i></span><span class="choice-text"><span class="choice-title">Modulo 02 · Report</span><span class="choice-subtitle">Spazio massimo per analisi e risultati</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
+                        <button type="button" class="module-view-choice" data-module-view="library" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-book-open-reader"></i></span><span class="choice-text"><span class="choice-title">Modulo 03 · Biblioteca Giuridica</span><span class="choice-subtitle">Sinossi PDF locali, ricerca e lettura</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                     </div>
                 </div>
                 <div class="portal-steps" aria-label="Fasi del flusso di lavoro">
@@ -657,7 +754,43 @@
             </div>
         </section>
 
+
+        <!-- MODULO 03: Biblioteca PDF interamente nel browser. Nessun file e' inviato al sito. -->
+        <details class="kb-module no-print" id="biblioteca-giuridica" open>
+          <summary><span class="kb-summary-left"><span class="kb-num">MOD 03</span><span><span class="kb-ttl"><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Biblioteca Giuridica</span><span class="kb-subttl">Sinossi PDF dal tuo Mac · Ricerca per pagina · Lettore PDF integrato</span></span></span><i class="fa-solid fa-chevron-down kb-caret" aria-hidden="true"></i></summary>
+          <div class="kb-content">
+            <p class="kb-intro">Seleziona la cartella <b>Materiale gem</b> dal Finder oppure scegli singoli PDF. I file vengono letti <b>solo dal browser</b>: nessun caricamento su GitHub, Firebase o Gemini per questa ricerca. Dopo aver ricaricato la pagina dovrai selezionare nuovamente i documenti.</p>
+            <div class="kb-actions">
+              <button type="button" class="kb-btn kb-btn-primary" id="kbChooseFolder"><i class="fa-solid fa-folder-open"></i> Seleziona cartella PDF</button>
+              <button type="button" class="kb-btn" id="kbChooseFiles"><i class="fa-solid fa-file-pdf"></i> Seleziona singoli PDF</button>
+              <button type="button" class="kb-btn" id="kbReset"><i class="fa-solid fa-rotate-left"></i> Svuota indice</button>
+              <input id="kbFolderInput" type="file" class="kb-visually-hidden" webkitdirectory directory multiple aria-label="Seleziona cartella PDF">
+              <input id="kbFilesInput" type="file" class="kb-visually-hidden" accept=".pdf,application/pdf" multiple aria-label="Seleziona file PDF">
+            </div>
+            <div class="kb-stats" aria-live="polite"><span class="kb-stat"><b id="kbStatDocs">0</b> PDF</span><span class="kb-stat"><b id="kbStatPages">0</b> pagine esaminate</span><span class="kb-stat"><b id="kbStatScans">0</b> pagine senza testo</span></div>
+            <div class="kb-status" id="kbStatus" role="status">Pronta. Scegli la cartella che contiene le tue sinossi PDF.</div>
+            <div class="kb-progress-track" id="kbProgressTrack" hidden><div id="kbProgressBar"></div></div>
+            <div class="kb-grid">
+              <aside class="kb-side"><div class="kb-side-title"><i class="fa-solid fa-layer-group"></i> Documenti indicizzati</div><div class="kb-docs" id="kbDocs"><div class="kb-doc-empty">Nessun PDF ancora selezionato.</div></div></aside>
+              <div class="kb-search-card"><div class="kb-search-header"><h3 class="kb-search-title"><i class="fa-solid fa-magnifying-glass"></i> Ricerca nelle sinossi</h3><form id="kbSearchForm" class="kb-search-row"><label class="kb-visually-hidden" for="kbQuery">Testo da cercare</label><input id="kbQuery" type="search" maxlength="300" placeholder="Es. riciclaggio, art. 184 TUF, insider trading..." autocomplete="off"><button class="kb-btn kb-btn-primary" type="submit"><i class="fa-solid fa-search"></i> Cerca nelle fonti</button></form><p class="kb-result-count" id="kbCount">Cerca per termine, articolo di legge o espressione. Fino a 60 risultati alla volta.</p></div>
+                <div class="kb-results" id="kbResults"><div class="kb-empty"><i class="fa-solid fa-book"></i>La biblioteca è pronta: importa la cartella e inizia a cercare.</div></div>
+              </div>
+            </div>
+            <div class="kb-note"><b>Fonti e riservatezza.</b> Le sinossi hanno finalità didattica: verifica la normativa vigente. La ricerca e il lettore restano nel browser. Il pulsante «Aggiungi al quadro» copia <b>solo un estratto scelto da te</b> nel Modulo 01; se successivamente generi il report, quell'estratto sarà inviato alle API Gemini insieme al testo del quadro fattuale.</div>
+          </div>
+        </details>
+
     </main>
+
+
+    <!-- Lettore PDF locale: apri la pagina vera nel canvas, senza affidarti al visualizzatore nativo. -->
+    <div id="kbOverlay" class="kb-overlay no-print" hidden role="presentation">
+      <div class="kb-viewer" role="dialog" aria-modal="true" aria-labelledby="kbViewerTitle">
+        <div class="kb-viewer-head"><div><h3 id="kbViewerTitle">Sinossi</h3><p>PDF locale · La pagina è renderizzata direttamente nel portale</p></div><button class="kb-btn" id="kbClose" type="button"><i class="fa-solid fa-xmark"></i> Chiudi</button></div>
+        <div class="kb-viewer-toolbar"><button type="button" class="kb-btn" id="kbPrev"><i class="fa-solid fa-chevron-left"></i> Precedente</button><span id="kbPageLabel" class="kb-viewer-page">Pagina —</span><button type="button" class="kb-btn" id="kbNext">Successiva <i class="fa-solid fa-chevron-right"></i></button><a id="kbNative" class="kb-btn" target="_blank" rel="noopener noreferrer" href="#"><i class="fa-solid fa-arrow-up-right-from-square"></i> PDF originale</a><button type="button" class="kb-btn kb-btn-gold" id="kbTransfer"><i class="fa-solid fa-file-import"></i> Aggiungi al quadro</button></div>
+        <div class="kb-viewer-area"><div class="kb-canvas-wrapper"><div><div class="kb-viewer-message" id="kbViewerMessage">Apertura pagina…</div><canvas id="kbCanvas" aria-label="Pagina PDF visualizzata"></canvas></div></div><div class="kb-pagetext-wrap"><h4>Testo della pagina</h4><div class="kb-pagetext" id="kbPageText">—</div></div></div>
+      </div>
+    </div>
 
     <!-- Pulsante flottante: apre la Gem personale in una nuova scheda, senza lasciare il sito -->
     <a class="gem-fab no-print"
@@ -1685,7 +1818,7 @@ ${body}
         const menu = document.getElementById('moduleViewMenu');
         const name = document.getElementById('moduleViewName');
         if (!workspace || !switcher || !toggle || !menu || !name) return;
-        const labels = { both: 'Entrambi i moduli', input: 'Modulo 01 · Quadro', report: 'Modulo 02 · Report' };
+        const labels = { both: 'Entrambi i moduli', input: 'Modulo 01 · Quadro', report: 'Modulo 02 · Report', library: 'Modulo 03 · Biblioteca' };
         const choices = Array.from(menu.querySelectorAll('[data-module-view]'));
 
         function closeMenu() {
@@ -1709,6 +1842,11 @@ ${body}
           name.textContent = labels[view];
           choices.forEach(button => button.setAttribute('aria-checked', String(button.dataset.moduleView === view)));
           closeMenu();
+          // La biblioteca resta montata quando si cambia vista: nessun indice PDF perso.
+          if (view === 'library') {
+            const library = document.getElementById('biblioteca-giuridica');
+            if (library) library.open = true;
+          }
           if (motionReduced.matches || sameView || !workspace.dataset.view) {
             workspace.classList.remove('module-view-leaving','module-view-entering');
             workspace.dataset.view = view;
@@ -1752,6 +1890,148 @@ ${body}
         changeView('both');
       })();
     </script>
+
+
+<script>
+/* Biblioteca locale — PDF.js 3.11.174, caricato da CDN. PDF mai trasmessi via fetch. */
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const W='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const state={docs:[], pages:[], activeDoc:null, currentPage:1, pdf:null, renderTask:null, url:null, busy:false, version:0, filter:null, activeSource:null};
+const clean=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('it').replace(/\s+/g,' ').trim();
+const empty=(id, msg)=>{const el=$(id);el.replaceChildren();const d=document.createElement('div');d.className='kb-empty';d.textContent=msg;el.appendChild(d);};
+const status=(msg,err=false)=>{$('kbStatus').textContent=msg;$('kbStatus').style.color=err?'#a03c3c':'#50728b';};
+function mk(tag,cls,txt){const el=document.createElement(tag);if(cls)el.className=cls;if(txt!=null)el.textContent=txt;return el;}
+function ready(){if(!window.pdfjsLib||!window.pdfjsLib.getDocument){status('Lettore PDF.js non disponibile. Verifica la connessione a Internet e ricarica la pagina.',true);return false;}
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc=W;return true;}
+function progress(n){$('kbProgressTrack').hidden=false;$('kbProgressBar').style.width=Math.min(100,Math.max(0,n))+'%';}
+function finishProgress(){setTimeout(()=>$('kbProgressTrack').hidden=true,450);}
+function stats(){ $('kbStatDocs').textContent=state.docs.length; $('kbStatPages').textContent=state.pages.length; $('kbStatScans').textContent=state.pages.filter(x=>!x.text.trim()).length; }
+function renderDocs(){const host=$('kbDocs');host.replaceChildren();if(!state.docs.length){host.append(mk('div','kb-doc-empty','Nessun PDF ancora selezionato.'));return;}
+  const all=mk('button','kb-doc','Tutti i documenti');all.type='button';all.setAttribute('aria-pressed',String(state.filter===null));all.addEventListener('click',()=>{state.filter=null;renderDocs();search();});host.append(all);
+  for(const doc of state.docs){const b=mk('button','kb-doc');b.type='button';b.setAttribute('aria-pressed',String(state.filter===doc.id));b.append(mk('span','',doc.title),mk('small','',`${doc.total} pagine · ${doc.relative}`));b.addEventListener('click',()=>{state.filter=doc.id;renderDocs();search();});host.append(b);}
+}
+async function loadFiles(files){
+  if(state.busy){status('Attendi la conclusione dell’indicizzazione in corso.');return;}
+  const pdfs=Array.from(files||[]).filter(f=>f.name.toLowerCase().endsWith('.pdf')).sort((a,b)=>(a.webkitRelativePath||a.name).localeCompare(b.webkitRelativePath||b.name,'it'));
+  if(!pdfs.length){status('Nessun PDF trovato nella selezione.',true);return;}
+  if(!ready())return;
+  await closeViewer();
+  state.version++;const generation=state.version;state.busy=true;state.docs=[];state.pages=[];state.filter=null;stats();renderDocs();empty('kbResults','Indicizzazione in corso…');
+  const buttons=['kbChooseFolder','kbChooseFiles','kbReset'];buttons.forEach(id=>$(id).disabled=true);
+  progress(0);let errors=[];let grandTotal=0;
+  try{
+    for(let i=0;i<pdfs.length;i++){
+      const f=pdfs[i];status(`Sto leggendo ${i+1} di ${pdfs.length}: ${f.name}`);
+      let pdf=null;
+      try{
+        const bytes=new Uint8Array(await f.arrayBuffer());
+        const task=window.pdfjsLib.getDocument({data:bytes,isEvalSupported:false});
+        pdf=await task.promise;
+        const doc={id:i+1,file:f,title:f.name.replace(/\.pdf$/i,''),total:pdf.numPages,relative:f.webkitRelativePath||f.name};
+        state.docs.push(doc);
+        for(let n=1;n<=pdf.numPages;n++){
+          const page=await pdf.getPage(n), tc=await page.getTextContent();
+          const str=tc.items.map(t=>t.str||'').join(' ').replace(/\s+/g,' ').trim();
+          state.pages.push({docId:doc.id,page:n,text:str,normalized:clean(str)});grandTotal++;
+          if(n%7===0 || n===pdf.numPages){status(`Indicizzazione: ${f.name} · pagina ${n}/${pdf.numPages}`);await new Promise(r=>setTimeout(r,0));}
+          progress((i+(n/pdf.numPages))/pdfs.length*100);
+          page.cleanup();
+        }
+      }catch(e){errors.push(`${f.name}: ${e.message||e}`);const iDoc=state.docs.findIndex(d=>d.id===i+1);if(iDoc!==-1)state.docs.splice(iDoc,1);state.pages=state.pages.filter(p=>p.docId!==i+1);}
+      finally{if(pdf)await pdf.destroy().catch(()=>{});}
+    }
+    stats();renderDocs();
+    const scanned=state.pages.filter(p=>!p.text).length;
+    if(!state.docs.length){status('Non è stato possibile indicizzare i PDF. '+errors[0],true);empty('kbResults','Nessun documento indicizzato.');}
+    else{status(`Pronta: ${state.docs.length} PDF, ${state.pages.length} pagine. ${scanned?scanned+' pagine senza testo ricercabile. ':''}${errors.length?errors.length+' file con errori (es. '+errors[0]+').':''}`);search();}
+  }catch(e){status('Errore durante l’indicizzazione: '+(e.message||e),true);}
+  finally{if(generation===state.version){state.busy=false;buttons.forEach(id=>$(id).disabled=false);finishProgress();}}
+}
+function highlight(el,text,terms){if(!terms.length){el.textContent=text;return;}const re=new RegExp('('+terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi');
+  let start=0,m;while((m=re.exec(text))!==null){if(m.index>start)el.append(document.createTextNode(text.slice(start,m.index)));el.append(mk('mark','',m[0]));start=re.lastIndex;if(!m[0].length)break;}el.append(document.createTextNode(text.slice(start)));}
+function snippet(s,terms){let at=0;const lower=clean(s);for(const w of terms){const ix=lower.indexOf(clean(w));if(ix>=0){at=ix;break;}}
+  const begin=Math.max(0,at-135), end=Math.min(s.length,at+355);return (begin?'…':'')+s.slice(begin,end)+(end<s.length?'…':'');}
+function extractTerms(q){return q.trim().split(/\s+/).filter(Boolean).slice(0,15);}
+function search(){const raw=$('kbQuery').value.trim();let host=$('kbResults');host.replaceChildren();
+  if(!state.docs.length){empty('kbResults','Seleziona prima la cartella dei PDF.');$('kbCount').textContent='Nessun documento indicizzato.';return;}
+  if(!raw){empty('kbResults','Indice pronto. Cerca una parola, un articolo o un argomento.');$('kbCount').textContent=`${state.docs.length} documenti · ${state.pages.length} pagine disponibili`;return;}
+  const phrase=clean(raw), terms=extractTerms(raw), norms=terms.map(clean).filter(Boolean);if(!phrase)return;
+  let total=0, items=[];
+  for(const page of state.pages){if(state.filter!==null && page.docId!==state.filter)continue;if(page.normalized.includes(phrase)||norms.every(t=>page.normalized.includes(t))){total++;if(items.length<60)items.push(page);}}
+  $('kbCount').textContent=total?`${total} pagine trovate${total>60?' · mostrate le prime 60':''}`:'Nessun risultato. Prova meno parole o sinonimi.';
+  if(!items.length){empty('kbResults','Nessun passaggio trovato per questa ricerca.');return;}
+  for(const item of items){const doc=state.docs.find(d=>d.id===item.docId);if(!doc)continue;const card=mk('article','kb-result');
+    card.append(mk('div','kb-result-meta',`PAGINA ${item.page} DEL PDF · ${doc.relative}`),mk('h3','',doc.title));
+    const t=mk('p','kb-snippet');highlight(t,snippet(item.text,terms),terms);card.append(t);
+    const actions=mk('div','kb-result-acts');
+    const view=mk('button','kb-btn kb-btn-primary','📖 Apri PDF a pagina '+item.page);view.type='button';view.addEventListener('click',()=>openViewer(doc,item.page));
+    const copy=mk('button','kb-btn','Copia citazione');copy.type='button';copy.addEventListener('click',()=>copyText(`${doc.title}, PDF, p. ${item.page}. ${snippet(item.text,terms)}`,copy));
+    const tr=mk('button','kb-btn','Aggiungi al quadro');tr.type='button';tr.addEventListener('click',()=>transfer(doc,item.page,item.text.slice(0,1400)));
+    actions.append(view,copy,tr);card.append(actions);host.append(card);
+  }
+}
+async function copyText(str,btn){try{await navigator.clipboard.writeText(str);}catch{const a=document.createElement('textarea');a.value=str;a.style.position='fixed';a.style.opacity='0';document.body.append(a);a.select();document.execCommand('copy');a.remove();}if(btn){const text=btn.textContent;btn.textContent='Copiato ✓';setTimeout(()=>btn.textContent=text,1200);}}
+function transfer(doc,page,text){const target=$('promptInput');if(!target){status('Campo del quadro fattuale non trovato.',true);return;}
+  const insert=`[ESTRATTO DIDATTICO — NON NORMA VIGENTE]\nFonte: ${doc.title}, PDF, pagina ${page}.\n${text}\n[FINE ESTRATTO]`;
+  target.value+=(target.value.trim()?'\n\n':'')+insert;target.dispatchEvent(new Event('input',{bubbles:true}));
+  if($('kbOverlay').hidden===false)closeViewer();
+  const choice=document.querySelector('[data-module-view="input"]');if(choice)choice.click();
+  setTimeout(()=>{target.scrollIntoView({behavior:'smooth',block:'center'});target.focus({preventScroll:true});},330);
+  status(`Estratto aggiunto al quadro fattuale: ${doc.title}, pagina ${page}. Sarà inviato a Gemini SOLO se avvii l’analisi.`);
+}
+async function closeViewer(){
+  $('kbOverlay').hidden=true;document.body.style.overflow='';
+  if(state.renderTask){try{state.renderTask.cancel();}catch{}state.renderTask=null;}
+  if(state.pdf){const p=state.pdf;state.pdf=null;try{await p.destroy();}catch{}}
+  if(state.url){URL.revokeObjectURL(state.url);state.url=null;}
+  state.activeDoc=null;
+}
+async function openViewer(doc,page){if(!ready())return;
+  await closeViewer();state.activeDoc=doc;state.currentPage=page;
+  $('kbViewerTitle').textContent=doc.title;$('kbViewerMessage').textContent='Apertura PDF…';$('kbOverlay').hidden=false;document.body.style.overflow='hidden';
+  try{
+    // Ogni Blob URL e' creato sul click: nessun link file:// negato dal browser.
+    state.url=URL.createObjectURL(doc.file);$('kbNative').href=state.url+'#page='+page;
+    const task=window.pdfjsLib.getDocument({data:new Uint8Array(await doc.file.arrayBuffer()),isEvalSupported:false});
+    state.pdf=await task.promise;
+    await showPage(page);
+  }catch(e){$('kbViewerMessage').textContent='Non riesco ad aprire questo PDF: '+(e.message||e);}
+}
+async function showPage(num){const pdf=state.pdf;if(!pdf)return;const p=Math.min(Math.max(1,num),pdf.numPages);state.currentPage=p;
+  $('kbPageLabel').textContent=`Pagina ${p} / ${pdf.numPages}`;$('kbPrev').disabled=p===1;$('kbNext').disabled=p===pdf.numPages;
+  if(state.url)$('kbNative').href=state.url+'#page='+p;
+  if(state.renderTask){try{state.renderTask.cancel();}catch{}state.renderTask=null;}
+  const my=Symbol();state.activeSource=my;
+  const canvas=$('kbCanvas'), msg=$('kbViewerMessage');msg.textContent='Caricamento della pagina '+p+'…';canvas.style.opacity='0.25';
+  const matched=state.pages.find(x=>x.docId===state.activeDoc.id&&x.page===p);
+  const text=$('kbPageText');text.textContent=matched?.text||'Questa pagina non contiene testo estraibile. Puoi comunque leggerla nel PDF.';
+  try{
+    const page=await pdf.getPage(p);if(my!==state.activeSource)return;
+    const viewport0=page.getViewport({scale:1});const wrapper=document.querySelector('.kb-canvas-wrapper');
+    const cssWidth=Math.max(200,Math.min(viewport0.width,Math.max(200,(wrapper.clientWidth||850)-28)));
+    const dpr=Math.min(2,window.devicePixelRatio||1);const v=page.getViewport({scale:cssWidth/viewport0.width*dpr});
+    canvas.width=Math.floor(v.width);canvas.height=Math.floor(v.height);canvas.style.width=Math.floor(cssWidth)+'px';canvas.style.height=Math.floor(v.height/dpr)+'px';
+    const job=page.render({canvasContext:canvas.getContext('2d'),viewport:v});state.renderTask=job;await job.promise;
+    if(my!==state.activeSource)return;canvas.style.opacity='1';msg.textContent='';state.renderTask=null;page.cleanup();
+  }catch(e){if(e?.name==='RenderingCancelledException')return;msg.textContent='Errore di visualizzazione: '+(e.message||e);}
+}
+$('kbChooseFolder').addEventListener('click',()=>$('kbFolderInput').click());
+$('kbChooseFiles').addEventListener('click',()=>$('kbFilesInput').click());
+$('kbFolderInput').addEventListener('change',e=>loadFiles(e.target.files));
+$('kbFilesInput').addEventListener('change',e=>loadFiles(e.target.files));
+$('kbSearchForm').addEventListener('submit',e=>{e.preventDefault();search();});
+$('kbReset').addEventListener('click',async()=>{if(state.busy)return;await closeViewer();state.docs=[];state.pages=[];state.filter=null;stats();renderDocs();$('kbQuery').value='';$('kbFolderInput').value='';$('kbFilesInput').value='';status('Indice svuotato. Puoi selezionare nuovamente la cartella.');search();});
+$('kbClose').addEventListener('click',closeViewer);
+$('kbOverlay').addEventListener('click',e=>{if(e.target===$('kbOverlay'))closeViewer();});
+$('kbPrev').addEventListener('click',()=>showPage(state.currentPage-1));
+$('kbNext').addEventListener('click',()=>showPage(state.currentPage+1));
+$('kbTransfer').addEventListener('click',()=>{if(!state.activeDoc)return;const d=state.activeDoc,p=state.currentPage;const x=state.pages.find(it=>it.docId===d.id&&it.page===p);transfer(d,p,(x?.text||'').slice(0,1400));});
+document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key==='Escape')closeViewer();else if(e.key==='ArrowRight')showPage(state.currentPage+1);else if(e.key==='ArrowLeft')showPage(state.currentPage-1);});
+// Biblioteca attivata dal selettore 'Vista moduli'; nessun pulsante esterno.
+})();
+</script>
 
 </body>
 </html>
