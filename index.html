@@ -579,6 +579,14 @@ window.ecoNomyBackup=(() => {
 .cp-original{margin:12px 0;font-size:12px}.cp-original summary{cursor:pointer;font-weight:700}.cp-original pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow-y:auto;font:12px/1.7 system-ui;background:#fff;border:1px solid #dbe4ed;border-radius:8px;padding:12px;margin-top:9px}
 .cp-table-wrap{overflow-x:auto}.cp-table-wrap table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}.cp-table-wrap th,.cp-table-wrap td{border:1px solid #dbe4ed;padding:10px;text-align:left;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;min-width:140px}.cp-table-wrap th{background:#123554;color:#fff}.cp-table-wrap td small{display:block;font-size:10px;color:#64748b;margin-top:8px}
 
+
+.fc-workflow-section{margin:16px 0;border:1px solid #dbe4ed;border-radius:10px;padding:14px;background:#fff}.fc-workflow-section>summary{font-size:14px;font-weight:800;color:#123554;cursor:pointer;margin-bottom:12px}
+.fc-task-candidate{display:flex;gap:9px;align-items:flex-start;padding:10px;border-bottom:1px solid #dbe4ed;font-size:12px}.fc-task-candidate input{margin-top:4px;flex:0 0 auto}.fc-task-candidate small{display:block;font-size:10px;color:#64748b;margin-top:4px}
+.fc-work-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #dbe4ed;font-size:12px}.fc-work-info{flex:1;min-width:0;overflow-wrap:anywhere}.fc-work-info small{display:block;color:#64748b;font-size:10px}.fc-work-row select{padding:6px;border:1px solid #b6cbdc;border-radius:7px;background:#fff;max-width:140px}
+.fc-evidence-row{border:1px solid #dbe4ed;border-radius:9px;padding:12px;margin-top:10px;font-size:12px;overflow-wrap:anywhere}.fc-evidence-row strong{display:block}.fc-evidence-row p{margin:7px 0;white-space:pre-wrap}.fc-evidence-kind{display:inline-block;background:#edf4fa;padding:3px 7px;margin-top:7px;border-radius:6px;font-size:10px}
+.eco-export-review ul{padding-left:20px;margin:15px 0}.eco-export-review li{font-size:13px;line-height:1.6;margin:8px 0}.eco-export-warning{color:#854d0e}.eco-export-info{color:#486076}
+@media(max-width:640px){.fc-work-row{flex-wrap:wrap}.fc-work-info{flex-basis:100%}}
+
 /* Selettore unico, sempre disponibile anche nei report lunghi. */
 .eco-module-nav{position:sticky;top:0;z-index:90;flex-shrink:0;background:#0b2846;border-bottom:1px solid #b79b50;box-shadow:0 3px 12px #071a3026}
 .eco-module-nav-inner{max-width:1500px;margin:auto;padding:9px 25px;display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -1270,6 +1278,20 @@ window.ecoNomyBackup=(() => {
                     <div class="fc-section"><h4><i class="fa-solid fa-scale-balanced"></i> Ipotesi di lavoro</h4><label class="fc-field" for="fcHypotheses">Una ipotesi per riga<textarea id="fcHypotheses" placeholder="Es.: Attività esercitata in modo abituale?\nPossibile spiegazione alternativa: uso occasionale?"></textarea><span class="fc-sub">Sono <strong>ipotesi dichiarate dall'operatore</strong>. Il confronto segnala righe inserite o tolte, non decide se un'ipotesi sia provata.</span></label></div>
                     <div class="fc-section"><h4><i class="fa-solid fa-circle-question"></i> Questioni ancora aperte</h4><label class="fc-field" for="fcNewQuestion">Aggiungi una domanda da approfondire<input id="fcNewQuestion" type="text" maxlength="380" placeholder="Es.: Sono documentati gli incassi?"></label><div class="fc-bar"><button id="fcAddQuestion" type="button" class="fc-btn"><i class="fa-solid fa-plus"></i> Aggiungi questione</button></div><div id="fcQuestions" class="fc-questions"></div><p class="fc-sub">Ogni questione può essere aperta, in verifica o chiusa. È una classificazione dell'operatore.</p></div>
                   </div>
+                  <details class="fc-section fc-workflow-section"><summary>Attività da svolgere</summary>
+                    <p class="fc-sub">Aggiungi soltanto gli approfondimenti che scegli tu. Lo stato è una tua annotazione; l’app non esegue le attività.</p>
+                    <label class="fc-field" for="fcTaskText">Nuova attività<textarea id="fcTaskText" maxlength="1200" placeholder="Es.: confrontare i corrispettivi dichiarati con i documenti disponibili"></textarea></label>
+                    <div class="fc-bar"><button id="fcTaskAdd" type="button" class="fc-btn">Aggiungi attività</button><button id="fcTaskSuggest" type="button" class="fc-btn">Scegli dai controlli</button></div>
+                    <div id="fcTaskCandidates"></div><button id="fcTaskAddSelected" type="button" class="fc-btn">Aggiungi le proposte selezionate</button><div id="fcTasks"></div>
+                  </details>
+                  <details class="fc-section fc-workflow-section"><summary>Affermazioni e riscontri</summary>
+                    <p class="fc-sub">Collega un’affermazione al documento o all’elemento che la sostiene. «Documentato» è una classificazione dell’operatore, non una verifica automatica.</p>
+                    <label class="fc-field" for="fcEvidenceClaim">Affermazione<textarea id="fcEvidenceClaim" maxlength="1200" placeholder="Es.: il terreno è stato usato come parcheggio nel periodo indicato"></textarea></label>
+                    <div class="fc-cols"><label class="fc-field" for="fcEvidenceKind">Classificazione<select id="fcEvidenceKind"><option value="riferito">Riferito</option><option value="documentato">Documentato dall’operatore</option><option value="ipotizzato">Ipotizzato</option></select></label><label class="fc-field" for="fcEvidenceSource">Documento o riscontro<input id="fcEvidenceSource" maxlength="400" placeholder="Es.: documento A, dichiarazione anonimizzata, fotografia"></label></div>
+                    <label class="fc-field" for="fcEvidencePage">Pagina o riferimento specifico<input id="fcEvidencePage" maxlength="60" placeholder="Es.: pag. 12, paragrafo 3, foto 2"></label>
+                    <label class="fc-field" for="fcEvidenceNote">Nota, limiti e collegamento con l’affermazione<textarea id="fcEvidenceNote" maxlength="2000"></textarea></label>
+                    <div class="fc-bar"><button id="fcEvidenceSave" type="button" class="fc-btn fc-primary">Aggiungi collegamento</button><button id="fcEvidenceCancel" type="button" class="fc-btn">Svuota campi</button></div><div id="fcEvidenceList"></div>
+                  </details>
                   <div class="fc-bar"><label class="fc-field" for="fcVersionNote" style="flex:1;min-width:220px">Nota per la prossima versione<input id="fcVersionNote" type="text" maxlength="240" placeholder="Es.: acquisiti nuovi elementi sui corrispettivi"></label></div>
                   <p class="fc-sub">Le ipotesi e le questioni vengono salvate anche come bozza locale; la versione storica si consolida soltanto quando premi «Salva versione» o dopo una nuova risposta Gemini.</p>
                 </div>
@@ -1292,7 +1314,7 @@ window.ecoNomyBackup=(() => {
                 <div class="pr-options">
                   <label class="pr-option"><input id="prIncludeFacts" type="checkbox" checked>Includi quadro fattuale e successive integrazioni</label>
                   <label class="pr-option"><input id="prIncludeAudit" type="checkbox" checked>Includi riscontri normativi e criticità del Verificatore</label>
-                  <label class="pr-option"><input id="prIncludeQuestions" type="checkbox" checked>Includi ipotesi di lavoro e questioni aperte del Fascicolo</label>
+                  <label class="pr-option"><input id="prIncludeQuestions" type="checkbox" checked>Includi ipotesi, questioni, attività e riscontri del Fascicolo</label>
                   <label class="pr-option"><input id="prIncludeAlt" type="checkbox" checked>Includi sintesi del Contraddittorio, se disponibile</label>
                 </div>
                 <div class="pr-controls"><button type="button" id="prPreviewBtn" class="pr-btn"><i class="fa-solid fa-eye"></i> Anteprima report</button><button type="button" id="prPdfBtn" class="pr-btn pr-btn-primary"><i class="fa-solid fa-file-pdf"></i> Stampa / Salva PDF</button><button type="button" id="prDocxBtn" class="pr-btn pr-btn-gold"><i class="fa-solid fa-file-word"></i> Scarica Word .docx</button></div>
@@ -1546,6 +1568,13 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             document.getElementById('ecoDuplicateCase').disabled=!currentConv&&!facts.trim();
             window.ecoNomyComparison?.refresh();
         }
+        function copyCaseWorkflow(data){
+            if(!data)return undefined;
+            const copy=JSON.parse(JSON.stringify(data));
+            copy.tasks=(copy.tasks||[]).map(t=>({...t,id:createCaseId(),state:'da_fare'}));
+            copy.evidence=(copy.evidence||[]).map(e=>({...e,id:createCaseId(),needsReview:true}));
+            return copy;
+        }
         function createCaseId(){return 'caso_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);}
         function duplicateCurrentCase() {
             if(factualWorkspaceBusy())return;
@@ -1554,7 +1583,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             if(!source&&!facts.trim())return;
             if(!saveActiveFactualDraft())return;
             if(source){
-                const clone={id:createCaseId(),ts:new Date().toISOString(),title:('Copia di '+source.title).slice(0,110),copiedFrom:String(source.id),workspaceFacts:facts,pendingFollowUp:document.getElementById('followUpInput').value,messages:source.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',...(m._file?{_file:m._file}:{}),...(m._libraryContext?{_libraryContext:m._libraryContext,_libraryRefs:[...(m._libraryRefs||[])]}:{})}))};
+                const clone={id:createCaseId(),ts:new Date().toISOString(),title:('Copia di '+source.title).slice(0,110),copiedFrom:String(source.id),workflow:copyCaseWorkflow(source.workflow),workspaceFacts:facts,pendingFollowUp:document.getElementById('followUpInput').value,messages:source.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',...(m._file?{_file:m._file}:{}),...(m._libraryContext?{_libraryContext:m._libraryContext,_libraryRefs:[...(m._libraryRefs||[])]}:{})}))};
                 // Salva la copia prima di cambiare il caso attivo: se manca spazio, resta sull'originale.
                 if(!storeCaseConversation(clone))return;
                 resetForNewFactualCase();currentConv=clone;
@@ -1607,7 +1636,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             const rec=await window.ecoNomyFascicolo.getCase(item.id);
             if(!rec?.versions?.length)throw new Error('Il fascicolo non è più disponibile.');
             const last=[...rec.versions].sort((a,b)=>a.number-b.number).at(-1);
-            const resumed={id:rec.caseId,ts:rec.createdAt||new Date().toISOString(),title:rec.title||'Fascicolo ripreso',resumedSnapshot:true,workspaceFacts:rec.workspace?.facts??last.factual,pendingFollowUp:rec.workspace?.pendingFollowUp||'',messages:[{role:'user',text:last.factual,fileName:(last.attachments||[]).join(', ')},...(last.report?[{role:'model',text:last.report}]:[])]};
+            const resumed={id:rec.caseId,ts:rec.createdAt||new Date().toISOString(),title:rec.title||'Fascicolo ripreso',resumedSnapshot:true,workflow:rec.draft,workspaceFacts:rec.workspace?.facts??last.factual,pendingFollowUp:rec.workspace?.pendingFollowUp||'',messages:[{role:'user',text:last.factual,fileName:(last.attachments||[]).join(', ')},...(last.report?[{role:'model',text:last.report}]:[])]};
             if(!storeCaseConversation(resumed))return;
             resetForNewFactualCase();currentConv=resumed;
             document.getElementById('promptInput').value=resumed.workspaceFacts;
@@ -1798,7 +1827,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
         function storeCaseConversation(conv) {
             const stored={id:conv.id,ts:conv.ts,title:conv.title,workspaceFacts:conv.workspaceFacts??document.getElementById('promptInput').value,pendingFollowUp:conv.pendingFollowUp||'',
-                ...(conv.copiedFrom?{copiedFrom:conv.copiedFrom}:{}),...(conv.resumedSnapshot?{resumedSnapshot:true}:{}),
+                ...(conv.workflow?{workflow:conv.workflow}:{}),...(conv.copiedFrom?{copiedFrom:conv.copiedFrom}:{}),...(conv.resumedSnapshot?{resumedSnapshot:true}:{}),
                 ...(conv.verification?{verification:conv.verification}:{}),...(conv.contradictory?{contradictory:conv.contradictory}:{}),...(conv.normativeAudit?{normativeAudit:conv.normativeAudit}:{}),
                 messages:conv.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',...(m._libraryContext?{_libraryContext:m._libraryContext,_libraryRefs:m._libraryRefs||[]}:{})}))};
             const list=loadHistory().filter(i=>String(i.id)!==String(stored.id));list.unshift(stored);
@@ -1808,6 +1837,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             if(!currentConv)return true;
             currentConv.workspaceFacts=document.getElementById('promptInput').value;
             currentConv.pendingFollowUp=document.getElementById('followUpInput').value;
+            const workflow=window.ecoNomyFascicolo?.getWorkflow?.();if(workflow)currentConv.workflow=workflow;
             if(!storeCaseConversation(currentConv))return false;
             renderHistory();window.ecoNomyFascicolo?.onConversationSaved();return true;
         }
@@ -3657,6 +3687,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  const $=id=>document.getElementById(id), E=(tag,cls='',str='')=>{const n=document.createElement(tag);if(cls)n.className=cls;if(str)n.textContent=str;return n};
  const DB_NAME='eco_nomy_fascicoli_v1', STORE='cases', MAX_VERSIONS=80;
  let dbPromise=null, activeCase=null, activeRecord=null, openQuestions=[], busy=false, backupBusy=false, draftTimer=null, generation=0, archiveView=null;
+ let workTasks=[],workEvidence=[],editingEvidenceId=null,taskSuggestions=[],suggestionSignature='';
  const stamp=()=>new Date().toISOString();
  const idKey=conv=>String(conv?.id||'');
  const unique=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2,9);
@@ -3687,23 +3718,71 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
    let data;req.onsuccess=()=>{data=req.result};req.onerror=()=>reject(req.error);
    tx.oncomplete=()=>resolve(data);tx.onerror=()=>reject(tx.error||new Error('Errore di memorizzazione locale'));tx.onabort=()=>reject(tx.error||new Error('Operazione annullata'));
  });}
- const empty=conv=>({caseId:idKey(conv),title:short(conv?.title||'Caso senza titolo').slice(0,110),createdAt:stamp(),updatedAt:stamp(),lastAutoKey:'',draft:{hypotheses:'',questions:[]},versions:[]});
+ const empty=conv=>({caseId:idKey(conv),title:short(conv?.title||'Caso senza titolo').slice(0,110),createdAt:stamp(),updatedAt:stamp(),lastAutoKey:'',draft:prepareWorkflow(conv?.workflow),versions:[]});
  let serialized=Promise.resolve();
  function enqueue(action){const run=serialized.catch(()=>{}).then(action);serialized=run.catch(()=>{});return run;}
  function hypothesisLines(raw){return [...new Set(String(raw||'').split(/\r?\n/).map(short).filter(Boolean))].slice(0,70);}
  const prepareQ=arr=>(Array.isArray(arr)?arr:[]).filter(q=>q&&typeof q.text==='string').slice(0,90).map(q=>({id:String(q.id||unique()),text:short(q.text).slice(0,380),state:['aperta','in_verifica','chiusa'].includes(q.state)?q.state:'aperta'}));
+ const prepareTasks=arr=>(Array.isArray(arr)?arr:[]).filter(x=>x&&typeof x.text==='string').slice(0,120).map(x=>({id:String(x.id||unique()),text:short(x.text).slice(0,1200),state:['da_fare','in_corso','completato'].includes(x.state)?x.state:'da_fare',origin:short(x.origin||'Inserimento manuale').slice(0,150),sourceSignature:String(x.sourceSignature||'').slice(0,100),updatedAt:String(x.updatedAt||stamp()).slice(0,100)}));
+ const prepareEvidence=arr=>(Array.isArray(arr)?arr:[]).filter(x=>x&&typeof x.claim==='string').slice(0,120).map(x=>({id:String(x.id||unique()),claim:short(x.claim).slice(0,1200),kind:['riferito','documentato','ipotizzato'].includes(x.kind)?x.kind:'riferito',source:String(x.source||'').slice(0,400),page:String(x.page||'').slice(0,60),note:String(x.note||'').slice(0,2000),needsReview:!!x.needsReview,updatedAt:String(x.updatedAt||stamp()).slice(0,100)}));
+ function prepareWorkflow(d){return {hypotheses:String(d?.hypotheses||'').slice(0,8500),questions:prepareQ(d?.questions),tasks:prepareTasks(d?.tasks),evidence:prepareEvidence(d?.evidence)};}
+ function readDraft(){return prepareWorkflow({hypotheses:$('fcHypotheses').value,questions:openQuestions,tasks:workTasks,evidence:workEvidence});}
+ function workflowForCurrent(){return activeCase===idKey(currentConv)&&!archiveView?readDraft():prepareWorkflow(currentConv?.workflow);}
+ function changedWorkflow(){drawTasks();drawEvidence();if(currentConv&&activeCase===idKey(currentConv)&&!archiveView){currentConv.workflow=readDraft();storeCaseConversation(currentConv);}scheduleDraft();}
+ function taskCandidates(){
+   const host=$('fcTaskCandidates');host.replaceChildren();taskSuggestions=[];
+   if(!currentConv||archiveView)return;
+   for(const [mode,title] of [['verifier','Verificatore'],['contraddittorio','Contraddittorio'],['normativa','Controllo normativo']]){
+     const data=window.ecoNomyComparison?.comparisonRows(currentConv,mode);if(!data||data.stale||caseFactsChanged())continue;
+     for(const row of data.rows){const text=short(row.action&&row.action!=='Approfondimento non specificato'?row.action:row.observation);if(!text||text.startsWith('Testo storico:'))continue;
+       if(taskSuggestions.some(s=>s.text===text))continue;taskSuggestions.push({text:text.slice(0,1200),origin:title+' · '+row.category,sourceSignature:window.ecoNomyVerifier?.signature?.([...currentConv.messages].reverse().find(m=>m.role==='model')?.text||'')||''});
+     }
+   }
+   suggestionSignature=window.ecoNomyVerifier?.signature?.([...currentConv.messages].reverse().find(m=>m.role==='model')?.text||'')||'';
+   taskSuggestions=taskSuggestions.slice(0,40);
+   if(!taskSuggestions.length){host.append(E('p','fc-sub','Nessuna proposta attuale disponibile. Avvia i controlli oppure inserisci un’attività manualmente.'));return;}
+   taskSuggestions.forEach((item,index)=>{const label=E('label','fc-task-candidate'),check=E('input');check.type='checkbox';check.dataset.candidate=String(index);const detail=E('span','',item.text);detail.append(E('small','',item.origin+' · proposta da valutare'));label.append(check,detail);host.append(label);});
+ }
+ function addSelectedTasks(){if(archiveView)return;const now=window.ecoNomyVerifier?.signature?.([...(currentConv?.messages||[])].reverse().find(m=>m.role==='model')?.text||'')||'';if(caseFactsChanged()||now!==suggestionSignature){status('Il caso è cambiato: premi di nuovo «Scegli dai controlli» prima di aggiungere proposte.',true);return;}let added=0;
+   for(const checked of $('fcTaskCandidates').querySelectorAll('input:checked')){const item=taskSuggestions[Number(checked.dataset.candidate)];if(!item||workTasks.some(t=>short(t.text).toLocaleLowerCase('it')===short(item.text).toLocaleLowerCase('it')))continue;if(workTasks.length>=120){status('Limite di 120 attività raggiunto.',true);break;}workTasks.push({...item,id:unique(),state:'da_fare',updatedAt:stamp()});added++;}
+   changedWorkflow();status(added+' attività selezionate aggiunte al fascicolo. Nessuna è stata eseguita automaticamente.');
+ }
+ function addManualTask(){if(archiveView)return;const text=short($('fcTaskText').value);if(!text)return;if(workTasks.length>=120){status('Limite di 120 attività raggiunto.',true);return;}if(workTasks.some(t=>short(t.text).toLocaleLowerCase('it')===text.toLocaleLowerCase('it'))){status('Questa attività è già presente.');return;}workTasks.push({id:unique(),text:text.slice(0,1200),state:'da_fare',origin:'Inserimento manuale',sourceSignature:'',updatedAt:stamp()});$('fcTaskText').value='';changedWorkflow();}
+ function drawTasks(){const host=$('fcTasks');host.replaceChildren();if(!workTasks.length){host.append(E('p','fc-sub','Nessuna attività registrata.'));return;}
+   for(const task of workTasks){const row=E('div','fc-work-row'),info=E('div','fc-work-info',task.text);const currentSignature=window.ecoNomyVerifier?.signature?.([...(currentConv?.messages||[])].reverse().find(m=>m.role==='model')?.text||'');info.append(E('small','',task.origin+(task.sourceSignature&&task.sourceSignature!==currentSignature?' · da un controllo precedente':'')));const state=E('select');state.setAttribute('aria-label','Stato attività: '+task.text);for(const [key,label] of [['da_fare','Da fare'],['in_corso','In corso'],['completato','Completato']]){const option=E('option','',label);option.value=key;option.selected=key===task.state;state.append(option);}state.addEventListener('change',()=>{task.state=state.value;task.updatedAt=stamp();changedWorkflow();});const remove=E('button','fc-btn','Rimuovi');remove.type='button';remove.addEventListener('click',()=>{workTasks=workTasks.filter(x=>x.id!==task.id);changedWorkflow();});row.append(info,state,remove);host.append(row);}
+ }
+ function clearEvidenceForm(){editingEvidenceId=null;for(const id of ['fcEvidenceClaim','fcEvidenceSource','fcEvidencePage','fcEvidenceNote'])$(id).value='';$('fcEvidenceKind').value='riferito';$('fcEvidenceSave').textContent='Aggiungi collegamento';}
+ function saveEvidence(){if(archiveView)return;const claim=short($('fcEvidenceClaim').value),source=$('fcEvidenceSource').value.trim(),kind=$('fcEvidenceKind').value;if(!claim){status('Inserisci l’affermazione da collegare.',true);return;}if(kind==='documentato'&&!source){status('Per classificare come documentato indica il documento o il riscontro consultato.',true);return;}if(!editingEvidenceId&&workEvidence.length>=120){status('Limite di 120 collegamenti raggiunto.',true);return;}
+   const link=prepareEvidence([{id:editingEvidenceId||unique(),claim,source,kind,page:$('fcEvidencePage').value,note:$('fcEvidenceNote').value,needsReview:false,updatedAt:stamp()}])[0];const index=workEvidence.findIndex(x=>x.id===editingEvidenceId);if(index>=0)workEvidence[index]=link;else workEvidence.push(link);clearEvidenceForm();changedWorkflow();status('Collegamento salvato come annotazione dell’operatore, non certificato dall’app.');
+ }
+ function drawEvidence(){const host=$('fcEvidenceList');host.replaceChildren();if(!workEvidence.length){host.append(E('p','fc-sub','Nessuna affermazione collegata a un riscontro.'));return;}
+   const labels={riferito:'Riferito',documentato:'Documentato dall’operatore',ipotizzato:'Ipotizzato'};
+   for(const link of workEvidence){const row=E('div','fc-evidence-row');row.append(E('strong','',link.claim),E('span','fc-evidence-kind',labels[link.kind]+(link.needsReview?' · copia da ricontrollare':'')),E('p','',link.source+(link.page?' · pagina / riferimento '+link.page:'')),E('p','fc-sub',link.note));const buttons=E('div','fc-bar'),edit=E('button','fc-btn','Modifica'),remove=E('button','fc-btn','Rimuovi');edit.type=remove.type='button';edit.addEventListener('click',()=>{editingEvidenceId=link.id;$('fcEvidenceClaim').value=link.claim;$('fcEvidenceKind').value=link.kind;$('fcEvidenceSource').value=link.source;$('fcEvidencePage').value=link.page;$('fcEvidenceNote').value=link.note;$('fcEvidenceSave').textContent='Salva modifica';$('fcEvidenceClaim').focus();});remove.addEventListener('click',()=>{workEvidence=workEvidence.filter(x=>x.id!==link.id);if(editingEvidenceId===link.id)clearEvidenceForm();changedWorkflow();});buttons.append(edit,remove);row.append(buttons);host.append(row);}
+ }
+ function versionWorkflow(host,version){
+   const data=prepareWorkflow({tasks:version.tasks,evidence:version.evidence});
+   if(!data.tasks.length&&!data.evidence.length)return;
+   const box=E('div','fc-diff');box.append(E('h5','','Attività e riscontri della versione finale'));
+   for(const task of data.tasks)box.append(E('p','',task.text+' ['+task.state.replaceAll('_',' ')+']'));
+   for(const link of data.evidence)box.append(E('p','',link.claim+' ['+link.kind+'] · '+link.source+(link.page?' · '+link.page:'')));
+   host.append(box);
+ }
+ $('fcTaskSuggest').addEventListener('click',taskCandidates);$('fcTaskAddSelected').addEventListener('click',addSelectedTasks);$('fcTaskAdd').addEventListener('click',addManualTask);
+ $('fcEvidenceSave').addEventListener('click',saveEvidence);$('fcEvidenceCancel').addEventListener('click',clearEvidenceForm);
+
  function snapshot(rec,conv,origin,note){
    const factual=currentFact(conv),report=currentReport(conv);
    if(factual.length>220000||report.length>250000)throw new Error('Testo troppo grande per la versione: esporta prima il fascicolo e riduci le dimensioni.');
    return {id:unique(),number:rec.versions.length+1,at:stamp(),origin,note:short(note).slice(0,240),factual,report,
      reportRole:'Ultima risposta Gemini, non necessariamente report consolidato',
-     hypothesis:rec.draft.hypotheses,questions:prepareQ(rec.draft.questions),messageCount:conv.messages?.length||0,
+     hypothesis:rec.draft.hypotheses,questions:prepareQ(rec.draft.questions),tasks:prepareTasks(rec.draft.tasks),evidence:prepareEvidence(rec.draft.evidence),messageCount:conv.messages?.length||0,
      attachments:(conv.messages||[]).filter(m=>m.fileName).map(m=>m.fileName).slice(0,50)};
  }
- function setDraftView(rec){$('fcHypotheses').value=rec.draft?.hypotheses||'';openQuestions=prepareQ(rec.draft?.questions);drawQuestions();$('fcVersionNote').value='';}
- async function saveDraft(){if(!activeRecord||!activeCase||archiveView)return;const key=activeCase;const draft={hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)};
+ function setDraftView(rec){$('fcHypotheses').value=rec.draft?.hypotheses||'';openQuestions=prepareQ(rec.draft?.questions);workTasks=prepareTasks(rec.draft?.tasks);workEvidence=prepareEvidence(rec.draft?.evidence);drawQuestions();drawTasks();drawEvidence();clearEvidenceForm();$('fcTaskCandidates').replaceChildren();taskSuggestions=[];if(currentConv&&rec.caseId===idKey(currentConv)&&!archiveView)currentConv.workflow=prepareWorkflow(rec.draft);$('fcVersionNote').value='';}
+ async function saveDraft(){if(!activeRecord||!activeCase||archiveView)return;const key=activeCase;const draft=readDraft();
+   if(currentConv&&idKey(currentConv)===key){currentConv.workflow=draft;storeCaseConversation(currentConv);}
    await enqueue(async()=>{const rec=await query('get',key);if(!rec)return;rec.draft=draft;rec.updatedAt=stamp();await query('put',rec);if(activeCase===key)activeRecord=rec;});
-   if(activeCase===key)status('Bozza di ipotesi e questioni salvata nel browser; per fissarla nella cronologia premi «Salva versione».');
+   if(activeCase===key)status('Bozza di ipotesi, questioni, attività e riscontri salvata nel browser; per fissarla nella cronologia premi «Salva versione».');
  }
  function scheduleDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(()=>saveDraft().catch(e=>status('Bozza non salvata: '+e.message,true)),420);}
  function drawQuestions(){const host=$('fcQuestions');host.replaceChildren();if(!openQuestions.length){host.append(E('p','fc-sub','Nessuna questione registrata.'));return;}
@@ -3725,7 +3804,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
    const qbox=E('div','fc-diff');const a=new Map((from.questions||[]).map(q=>[q.id,q]));const newQs=(to.questions||[]).filter(q=>!a.has(q.id)).map(q=>q.text+' ['+q.state+']');const transitions=(to.questions||[]).filter(q=>a.has(q.id)&&a.get(q.id).state!==q.state).map(q=>q.text+': '+a.get(q.id).state+' → '+q.state);
    lists(qbox,'Questioni · aggiunte',newQs,'Nessuna nuova questione.');lists(qbox,'Questioni · stato modificato',transitions,'Nessuno stato modificato.');lists(qbox,'Ancora aperte (versione finale)',(to.questions||[]).filter(q=>q.state!=='chiusa').map(q=>q.text+' ['+q.state+']'),'Nessuna questione aperta registrata.');
    const reportbox=E('div','fc-diff');lists(reportbox,'Ultima elaborazione · testo aggiunto',rd.add,'Nessuna differenza testuale individuata.');lists(reportbox,'Ultima elaborazione · testo rimosso',rd.del,'Nessuna rimozione testuale individuata.');
-   host.append(add,minus,hypot,qbox,reportbox);
+   host.append(add,minus,hypot,qbox,reportbox);versionWorkflow(host,to);
  }
  function renderVersionControls(rec){const versions=sortedVersions(rec);$('fcCompare').hidden=!versions.length;$('fcTimeline').replaceChildren();for(const v of versions){$('fcTimeline').append(E('span','fc-version',`v${v.number} · ${v.origin==='auto'?'Report':'Manuale'} · ${new Date(v.at).toLocaleDateString('it-IT')}${v.note?' · '+v.note.slice(0,32):''}`));}
    const oldFrom=options($('fcFrom'),versions),oldTo=options($('fcTo'),versions);$('fcFrom').value=oldFrom||(versions.length>1?versions[versions.length-2].id:versions[0]?.id||'');$('fcTo').value=oldTo||versions[versions.length-1]?.id||'';
@@ -3752,21 +3831,21 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      renderArchive(all);
    }catch(e){$('fcRoot').hidden=false;$('fcWork').hidden=true;$('fcCompare').hidden=true;$('fcSave').disabled=true;$('fcExport').disabled=true;$('fcExportPlain').disabled=true;status('Archivio locale non disponibile: '+e.message+'. Usa Chrome o Safari in modalità normale.',true);}
  }
- async function manualSave(){if(busy||!currentConv||archiveView||!currentReport(currentConv))return;busy=true;$('fcSave').disabled=true;const target=currentConv,id=idKey(target);const draft={hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)};
+ async function manualSave(){if(busy||!currentConv||archiveView||!currentReport(currentConv))return;busy=true;$('fcSave').disabled=true;const target=currentConv,id=idKey(target);const draft=readDraft();
    try{const version=await enqueue(async()=>{const rec=await query('get',id)||empty(target);if(rec.versions.length>=MAX_VERSIONS)throw new Error('Limite di 80 versioni per fascicolo: esporta un backup prima di proseguire.');rec.title=short(target.title).slice(0,110);rec.draft=draft;
       const v=snapshot(rec,target,'manuale',$('fcVersionNote').value);rec.versions.push(v);rec.updatedAt=stamp();await query('put',rec);return v;});archiveView=null;await refresh();status(`Versione v${version.number} salvata nel browser. Esporta un backup JSON per conservarla fuori dal browser.`);$('fcTo').value=version.id;compare();$('fcVersionNote').value='';}
    catch(e){status('Salvataggio fallito: '+e.message+' · non chiudere questa pagina; esporta eventuali dati già disponibili.',true);}finally{busy=false;$('fcSave').disabled=false;}
  }
  async function onConversationSaved(){const conv=currentConv?{...currentConv,messages:currentConv.messages.map(m=>({...m}))}:null;if(!conv||!currentReport(conv))return;const id=idKey(conv),auto=reportSignature(conv);
    const workspace={facts:String($('promptInput').value||''),pendingFollowUp:String($('followUpInput').value||'')};
-   const stagedDraft=activeCase===id&&!archiveView?{hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)}:null;
+   const stagedDraft=activeCase===id&&!archiveView?readDraft():prepareWorkflow(conv.workflow);
    const capturedFact=currentFact(conv);
    try{const result=await enqueue(async()=>{const rec=await query('get',id)||empty(conv);rec.workspace=workspace;if(stagedDraft)rec.draft=stagedDraft;if(rec.lastAutoKey===auto){rec.updatedAt=stamp();await query('put',rec);return null;}
      if(rec.versions.length>=MAX_VERSIONS)throw new Error('80 versioni raggiunte: esporta un backup.');rec.title=short(conv.title).slice(0,110);
      const v=snapshot(rec,conv,'auto',rec.versions.length?'Nuova risposta Gemini':'Prima elaborazione');v.factual=capturedFact;rec.versions.push(v);rec.lastAutoKey=auto;rec.updatedAt=stamp();await query('put',rec);return v;});if(result){await refresh();if(activeCase===id){$('fcTo').value=result.id;compare();}}}
    catch(e){status('Attenzione: la nuova versione automatica NON è stata archiviata: '+e.message,true);console.error('Fascicolo:',e);}
  }
- async function exportJSON(protectedBackup=true){const key=activeCase;if(!key||backupBusy)return;backupBusy=true;try{const rec=await query('get',key);if(!rec){status('Nessun fascicolo da esportare.',true);return;}
+ async function exportJSON(protectedBackup=true){const key=activeCase;if(!key||backupBusy)return;backupBusy=true;try{if(!archiveView&&idKey(currentConv)===key)await saveDraft();const rec=await query('get',key);if(!rec){status('Nessun fascicolo da esportare.',true);return;}
     const backup={format:'eco-nomy-fascicolo-v1',exportedAt:stamp(),notice:'Copia di lavoro, non archivio forense. PDF e allegati binari non inclusi.',case:rec};
     let exported=backup;
     if(protectedBackup){const password=await window.ecoNomyBackup.askPassword(true);if(password===null)return;status('Preparazione del backup protetto…');exported=await window.ecoNomyBackup.encrypt(backup,password);}
@@ -3779,9 +3858,9 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      if(json?.format===window.ecoNomyBackup.format){const password=await window.ecoNomyBackup.askPassword(false);if(password===null)return;status('Apertura del backup protetto…');json=await window.ecoNomyBackup.decrypt(json,password);}
      else if(file.size>25*1024*1024)throw new Error('JSON non cifrato oltre 25 MB.');
      if(json?.format!=='eco-nomy-fascicolo-v1'||!json.case||!Array.isArray(json.case.versions)||!json.case.versions.length||json.case.versions.length>MAX_VERSIONS)throw new Error('Formato non valido o numero di versioni non supportato.');
-     const old=json.case,rec={caseId:'importato_'+unique(),title:('Importato · '+short(old.title||'fascicolo')).slice(0,110),createdAt:stamp(),updatedAt:stamp(),lastAutoKey:'',...(old.workspace?{workspace:{facts:String(old.workspace.facts||'').slice(0,220000),pendingFollowUp:String(old.workspace.pendingFollowUp||'').slice(0,220000)}}:{}),draft:{hypotheses:String(old.draft?.hypotheses||'').slice(0,8500),questions:prepareQ(old.draft?.questions)},versions:[]};
+     const old=json.case,rec={caseId:'importato_'+unique(),title:('Importato · '+short(old.title||'fascicolo')).slice(0,110),createdAt:stamp(),updatedAt:stamp(),lastAutoKey:'',...(old.workspace?{workspace:{facts:String(old.workspace.facts||'').slice(0,220000),pendingFollowUp:String(old.workspace.pendingFollowUp||'').slice(0,220000)}}:{}),draft:prepareWorkflow(old.draft),versions:[]};
      for(const raw of json.case.versions){if(typeof raw?.factual!=='string'||typeof raw?.report!=='string'||raw.factual.length>220000||raw.report.length>250000)throw new Error('Una versione supera i limiti di testo o è incompleta.');
-       rec.versions.push({id:unique(),number:rec.versions.length+1,at:(typeof raw.at==='string'&&!isNaN(Date.parse(raw.at)))?raw.at:stamp(),origin:raw.origin==='auto'?'auto':'manuale',note:short(raw.note).slice(0,240),factual:raw.factual,report:raw.report,reportRole:'Ultima risposta Gemini, non necessariamente report consolidato',hypothesis:String(raw.hypothesis||'').slice(0,8500),questions:prepareQ(raw.questions),messageCount:Number.isFinite(raw.messageCount)?Math.max(0,Math.min(raw.messageCount,9999)):0,attachments:Array.isArray(raw.attachments)?raw.attachments.slice(0,50).map(x=>String(x).slice(0,240)):[]});
+       rec.versions.push({id:unique(),number:rec.versions.length+1,at:(typeof raw.at==='string'&&!isNaN(Date.parse(raw.at)))?raw.at:stamp(),origin:raw.origin==='auto'?'auto':'manuale',note:short(raw.note).slice(0,240),factual:raw.factual,report:raw.report,reportRole:'Ultima risposta Gemini, non necessariamente report consolidato',hypothesis:String(raw.hypothesis||'').slice(0,8500),questions:prepareQ(raw.questions),tasks:prepareTasks(raw.tasks),evidence:prepareEvidence(raw.evidence),messageCount:Number.isFinite(raw.messageCount)?Math.max(0,Math.min(raw.messageCount,9999)):0,attachments:Array.isArray(raw.attachments)?raw.attachments.slice(0,50).map(x=>String(x).slice(0,240)):[]});
      }
      await enqueue(()=>query('put',rec));await viewArchive(rec.caseId);status('Backup importato in un nuovo fascicolo senza sovrascrivere gli esistenti. Puoi esaminarlo e riprenderne una versione.');
    }catch(e){status('Importazione rifiutata: '+e.message,true);}
@@ -3793,7 +3872,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
    if(typeof saveActiveFactualDraft==='function'&&!saveActiveFactualDraft())return;
    if(typeof allowLeavingCurrentAttachment==='function'&&!allowLeavingCurrentAttachment())return;
    if(typeof removeFile==='function')removeFile();const num=Date.now()+Math.floor(Math.random()*1000);
-   const newConv={id:num,ts:stamp(),title:('Ripreso da v'+version.number+' · '+(activeRecord.title||'fascicolo')).slice(0,80),messages:[{role:'user',text:version.factual||'',fileName:''},...(version.report?[{role:'model',text:version.report}]:[])]};
+   const newConv={id:num,ts:stamp(),title:('Ripreso da v'+version.number+' · '+(activeRecord.title||'fascicolo')).slice(0,80),workflow:prepareWorkflow({hypotheses:version.hypothesis,questions:version.questions,tasks:version.tasks,evidence:version.evidence}),messages:[{role:'user',text:version.factual||'',fileName:''},...(version.report?[{role:'model',text:version.report}]:[])]};
    resetForNewFactualCase();archiveView=null;activeCase=null;activeRecord=null;currentConv=newConv;$('promptInput').value=version.factual||'';
    if(version.report){saveConversation();renderConversation();}else{document.getElementById('outputArea').innerHTML=emptyReportMarkup;renderHistory();}
    document.querySelector('[data-module-view="input"]')?.click();status('Versione ripresa come nuovo caso. Controlla tutti i dati prima di una nuova elaborazione.');
@@ -3809,7 +3888,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  $('fcSave').addEventListener('click',manualSave);$('fcExport').addEventListener('click',()=>exportJSON(true));$('fcExportPlain').addEventListener('click',()=>exportJSON(false));$('fcImport').addEventListener('click',()=>$('fcImportFile').click());$('fcImportFile').addEventListener('change',e=>importJSON(e.target.files?.[0]));$('fcRestore').addEventListener('click',restore);
  $('fcAddQuestion').addEventListener('click',addQuestion);$('fcNewQuestion').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addQuestion();}});
  $('fcHypotheses').addEventListener('input',scheduleDraft);$('promptInput').addEventListener('input',factualWarning);$('fcFrom').addEventListener('change',compare);$('fcTo').addEventListener('change',compare);
- window.ecoNomyFascicolo={refresh,onConversationSaved,exportJSON,listCases:()=>query('getAll'),getCase:id=>query('get',String(id)),flush(){clearTimeout(draftTimer);return saveDraft();},reset(){clearTimeout(draftTimer);saveDraft().catch(e=>status('Bozza del caso precedente non salvata: '+e.message,true));archiveView=null;activeCase=null;activeRecord=null;openQuestions=[];$('fcHypotheses').value='';$('fcNewQuestion').value='';$('fcVersionNote').value='';return refresh();}};
+ window.ecoNomyFascicolo={refresh,onConversationSaved,exportJSON,getWorkflow:workflowForCurrent,normalizeWorkflow:prepareWorkflow,listCases:()=>query('getAll'),getCase:id=>query('get',String(id)),flush(){clearTimeout(draftTimer);return saveDraft();},reset(){clearTimeout(draftTimer);saveDraft().catch(e=>status('Bozza del caso precedente non salvata: '+e.message,true));archiveView=null;activeCase=null;activeRecord=null;openQuestions=[];workTasks=[];workEvidence=[];taskSuggestions=[];clearEvidenceForm();$('fcTasks').replaceChildren();$('fcEvidenceList').replaceChildren();$('fcTaskCandidates').replaceChildren();$('fcHypotheses').value='';$('fcNewQuestion').value='';$('fcVersionNote').value='';return refresh();}};
  refresh();
 })();
 </script>
@@ -3876,10 +3955,9 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      return {label,status,date:audit.date||'',urls,note:trimText(rec.note,800),historical:checked?trimText(rec.past,1500):'',current:checked?trimText(rec.now,1500):''};
    });
  }
- function openIssues(){const root=$('fcRoot');if(!root||root.hidden||!valid())return {hypotheses:[],questions:[]};
-   const hypothesis=tidy($('fcHypotheses')?.value||'').split('\n').map(tidy).filter(Boolean).slice(0,45);
-   const questions=[...document.querySelectorAll('#fcQuestions .fc-question')].slice(0,60).map(row=>({text:tidy(row.querySelector('span')?.textContent),state:row.querySelector('select')?.value||'aperta'})).filter(x=>x.text);
-   return {hypotheses:hypothesis,questions};
+ function openIssues(){
+   const data=window.ecoNomyFascicolo?.getWorkflow?.()||{};
+   return {hypotheses:tidy(data.hypotheses||'').split(/\r?\n/).filter(Boolean),questions:data.questions||[],tasks:data.tasks||[],evidence:data.evidence||[]};
  }
  function build(){if(!valid())throw new Error('Genera o riapri un report nel Modulo 02 prima di esportare.');
    const conv=currentConv;const options=opts(),report=latestReport(),sources=sourceRecords(report,conv),laws=norms(report,conv),issues=openIssues();
@@ -3921,7 +3999,10 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      push('meta','Ipotesi e stati dichiarati dall’operatore; non costituiscono accertamenti. Gli elementi riportati provengono dalla bozza attiva del fascicolo.');
      for(const h of issues.hypotheses)push('bullet','Ipotesi di lavoro: '+h);
      for(const q of issues.questions)push('bullet','['+q.state.replace('_',' ')+'] '+q.text);
-     if(!issues.hypotheses.length&&!issues.questions.length)push('paragraph','Nessuna ipotesi o questione aperta riportata nella bozza del fascicolo attivo.');
+     if(issues.tasks.length){push('subheading','ATTIVITÀ DA SVOLGERE');for(const t of issues.tasks)push('bullet','['+t.state.replaceAll('_',' ')+'] '+t.text+' · '+t.origin);}
+     if(issues.evidence.length){push('subheading','AFFERMAZIONI E RISCONTRI');for(const e of issues.evidence){push('bullet',e.claim+' ['+(e.kind==='documentato'?'Documentato dall’operatore':e.kind)+(e.needsReview?' · da ricontrollare':'')+']');push('paragraph','Riscontro: '+(e.source||'non indicato')+(e.page?' · pagina / riferimento '+e.page:'')+(e.note?' · '+e.note:''));}}
+
+     if(!issues.hypotheses.length&&!issues.questions.length&&!issues.tasks.length&&!issues.evidence.length)push('paragraph','Nessuna ipotesi o questione aperta riportata nella bozza del fascicolo attivo.');
    }
    if(options.alternative){push('heading',options.questions?'7. OSSERVAZIONI DEL CONTRADDITTORIO':'6. OSSERVAZIONI DEL CONTRADDITTORIO');
      if(conv.contradictory?.result){const ct=conv.contradictory.result;push('meta','Seconda lettura con Gemini; le ipotesi alternative non sono fatti documentati.');push('paragraph',ct.sintesi||'');
@@ -3974,7 +4055,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  }
  function filename(ext){const d=new Date().toISOString().slice(0,10);const safe=tidy(currentConv?.title||'report').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,42)||'report';return `eco-nomy_${safe}_${d}.${ext}`;}
  function status(msg,error=false){$('prStatus').textContent=msg;$('prStatus').classList.toggle('pr-error',error);}
- function pdf(){if(!valid()){alert('Genera o riapri prima un report nel Modulo 02.');return;}let report;try{report=makePreview(build());}catch(e){status(e.message,true);return;}
+ async function pdf(){if(!valid()){alert('Genera o riapri prima un report nel Modulo 02.');return;}if(!await window.ecoNomyExportReview.review('PDF'))return;let report;try{report=makePreview(build());}catch(e){status(e.message,true);return;}
    let doc=$('prPrintDocument');if(doc)doc.remove();doc=document.createElement('article');doc.id='prPrintDocument';doc.setAttribute('aria-label','Report per la stampa');doc.style.display='none';
    for(const item of report.parts){const ty=item.type;const node=document.createElement(ty==='title'?'h1':ty==='heading'?'h2':ty==='subheading'||ty==='minor'?'h3':ty==='bullet'?'ul':'p');
      if(ty==='bullet'){const li=document.createElement('li');li.textContent=item.text;node.append(li);}
@@ -3986,7 +4067,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
    // Esegue la stampa della pagina corrente con CSS dedicato, senza nuove schede o pop-up.
    window.print();
  }
- function word(){if(!valid()){alert('Genera o riapri prima un report nel Modulo 02.');return;}try{const report=makePreview(build());const blob=blobDocx(report);if(blob.size>12_000_000)throw new Error('Documento superiore a 12 MB: riduci i testi prima di esportare.');
+ async function word(){if(!valid()){alert('Genera o riapri prima un report nel Modulo 02.');return;}if(!await window.ecoNomyExportReview.review('Word'))return;try{const report=makePreview(build());const blob=blobDocx(report);if(blob.size>12_000_000)throw new Error('Documento superiore a 12 MB: riduci i testi prima di esportare.');
      const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=filename('docx');document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),5000);
      status('File Word .docx preparato sul dispositivo ('+Math.round(blob.size/1024)+' KB). Controlla che sia stato scaricato. Nessun PDF sorgente incluso.');
    }catch(e){status('Esportazione Word non riuscita: '+e.message,true);}
@@ -3999,6 +4080,56 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  window.addEventListener('afterprint',()=>{const sheet=$('prPrintDocument');if(sheet)sheet.remove();});
  window.ecoNomyProfessionalReport={refresh,preview,pdf,word,build};refresh();
 })();
+</script>
+<script>
+/* Riepilogo prima del PDF/Word: controllo locale, senza certificazioni automatiche. */
+(function(){
+ let pending=false;
+ function findings(conv,workflow){
+   const report=[...(conv?.messages||[])].reverse().find(m=>m.role==='model')?.text||'',out=[];
+   const add=(level,text)=>out.push({level,text});
+   if(document.getElementById('fcEvidenceClaim')?.value.trim()||document.getElementById('fcTaskText')?.value.trim())add('warning','Sono presenti campi di attività o riscontri non ancora aggiunti: tornare al fascicolo per salvarli.');
+   if(caseFactsChanged())add('warning','Il quadro fattuale è stato modificato: il report non incorpora ancora questi cambiamenti.');
+   const signature=window.ecoNomyVerifier?.signature?.(report);
+   const verification=conv?.verification;
+   if(!verification)add('warning','Verificatore non avviato.');else if(signature&&verification.signature!==signature)add('warning','La scheda del Verificatore si riferisce a una versione precedente.');else if(!verification.ai)add('info','È presente solo il controllo delle fonti locali, senza seconda lettura AI.');
+   const ct=conv?.contradictory;if(!ct)add('info','Contraddittorio non eseguito.');else if(ct.signature!==window.ecoNomyContraddittorio?.signature?.())add('warning','Il Contraddittorio si riferisce a una versione precedente.');
+   const audit=conv?.normativeAudit;
+   if(!audit?.date)add('warning','Data del fatto non indicata nel controllo normativo.');
+   if(audit?.signature&&signature&&audit.signature!==signature)add('warning','La scheda normativa si riferisce a una versione precedente.');
+   const unverified=(audit?.items||[]).filter(x=>!audit.records?.[x.id]?.confirmed||!audit.records?.[x.id]?.attested);
+   if(unverified.length)add('warning',unverified.length+' riferimenti normativi senza riscontro dichiarato dall’operatore.');
+   const oldTasks=(workflow?.tasks||[]).filter(x=>x.sourceSignature&&signature&&x.sourceSignature!==signature);if(oldTasks.length)add('info',oldTasks.length+' attività provengono da controlli su una versione precedente: rivalutarne la pertinenza.');
+   const tasks=(workflow?.tasks||[]).filter(x=>x.state!=='completato'),questions=(workflow?.questions||[]).filter(x=>x.state!=='chiusa');
+   if(tasks.length)add('warning',tasks.length+' attività ancora da completare.');if(questions.length)add('warning',questions.length+' questioni del fascicolo ancora aperte o in verifica.');
+   const links=workflow?.evidence||[];if(!links.length)add('info','Nessuna affermazione collegata manualmente a un riscontro.');else{const pendingLinks=links.filter(x=>x.kind!=='documentato'||x.needsReview||!x.source);if(pendingLinks.length)add('info',pendingLinks.length+' affermazioni riferite, ipotizzate o con collegamenti da ricontrollare.');}
+   if(conv?.copiedFrom||conv?.resumedSnapshot)add('info','Caso copiato o ripreso da un fascicolo: ricontrollare fonti e allegati disponibili.');
+   for(const [id,label] of [['prIncludeAudit','Verificatore e riscontri normativi'],['prIncludeQuestions','Fascicolo, attività e collegamenti'],['prIncludeAlt','Contraddittorio']])if(document.getElementById(id)?.checked===false)add('info',label+' esclusi dall’esportazione.');
+   return out;
+ }
+ async function review(format){
+   if(pending||!currentConv)return false;
+   if(ecoGeminiRequests.busy){alert('Attendi o interrompi le elaborazioni prima di esportare il report.');return false;}
+   pending=true;const id=currentConv.id;
+   try{
+     await window.ecoNomyFascicolo?.flush?.();
+     if(currentConv?.id!==id)return false;
+     const fingerprint=JSON.stringify({messages:currentConv.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',refs:m._libraryRefs||[]})),verification:currentConv.verification,contradictory:currentConv.contradictory,normativeAudit:currentConv.normativeAudit,workflow:window.ecoNomyFascicolo?.getWorkflow?.(),facts:document.getElementById('promptInput').value});
+     const rows=findings(currentConv,window.ecoNomyFascicolo?.getWorkflow?.()||{});
+     return await new Promise(resolve=>{
+       const dialog=document.createElement('dialog');dialog.className='eco-case-dialog eco-export-review';dialog.setAttribute('aria-labelledby','ecoExportReviewTitle');
+       const title=document.createElement('h2');title.id='ecoExportReviewTitle';title.textContent='Prima di esportare in '+format;
+       const intro=document.createElement('p');intro.textContent='Caso: '+currentConv.title+'. Questo riepilogo segnala controlli e attività disponibili; non certifica l’analisi. Puoi proseguire anche con approfondimenti aperti.';dialog.append(title,intro);
+       const list=document.createElement('ul');
+       for(const row of rows){const item=document.createElement('li');item.textContent=row.text;item.className=row.level==='warning'?'eco-export-warning':'eco-export-info';list.append(item);}if(!rows.length){const item=document.createElement('li');item.textContent='Nessuna pendenza rilevata dai controlli disponibili. Verifica comunque il documento prima di usarlo.';list.append(item);}dialog.append(list);
+       const controls=document.createElement('div');controls.className='eco-case-actions';const cancel=document.createElement('button'),proceed=document.createElement('button');cancel.type=proceed.type='button';cancel.textContent='Torna al caso';proceed.textContent='Continua con l’esportazione';let accepted=false;
+       cancel.addEventListener('click',()=>dialog.close());proceed.addEventListener('click',()=>{accepted=currentConv?.id===id&&fingerprint===JSON.stringify({messages:currentConv.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',refs:m._libraryRefs||[]})),verification:currentConv.verification,contradictory:currentConv.contradictory,normativeAudit:currentConv.normativeAudit,workflow:window.ecoNomyFascicolo?.getWorkflow?.(),facts:document.getElementById('promptInput').value});if(!accepted)alert('Il caso è cambiato durante il riepilogo: riapri l’esportazione per controllare i dati aggiornati.');dialog.close();});dialog.addEventListener('close',()=>{dialog.remove();resolve(accepted);},{once:true});controls.append(cancel,proceed);dialog.append(controls);document.body.append(dialog);dialog.showModal();cancel.focus();
+     });
+   }catch(error){alert('Riepilogo non disponibile: '+error.message+'. Il report non è stato esportato.');return false;}finally{pending=false;}
+ }
+ window.ecoNomyExportReview={review,findings};
+})();
+
 </script>
 <script>
 /* Confronto locale: nessuna richiesta AI, nessuna modifica del report. */
