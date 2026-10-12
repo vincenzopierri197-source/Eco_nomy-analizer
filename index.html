@@ -4348,26 +4348,32 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
     // Messaggio «qui info»: si vede brevemente solo quando la pagina rimane inattiva.
     // Non segue lo scorrimento, non lampeggia e non è mai mostrato sul dialog aperto.
     const notice=document.getElementById('ecoGeniusNotice');
-    let idleTimer=null, hideTimer=null, lastShown=0, displays=0;
-    const IDLE_MS=2500, VISIBLE_MS=3200, MIN_INTERVAL_MS=30000, MAX_DISPLAYS=2;
-    const hideNotice=()=>{if(notice)notice.classList.remove('is-visible');clearTimeout(hideTimer);};
-    const mayDisplay=()=>!!notice&&!dialog.open&&document.visibilityState==='visible'&&
-      !document.querySelector('dialog[open]')&&displays<MAX_DISPLAYS&&
-      Date.now()-lastShown>=MIN_INTERVAL_MS;
-    const onIdle=()=>{
-      if(!mayDisplay())return;
-      notice.classList.add('is-visible');
-      lastShown=Date.now();displays++;
-      hideTimer=setTimeout(hideNotice,VISIBLE_MS);
-    };
-    const activity=()=>{
-      hideNotice();clearTimeout(idleTimer);
-      if(displays>=MAX_DISPLAYS)return;
-      // Al ritorno alla quiete rispetta anche il periodo minimo fra due apparizioni.
-      const wait=Math.max(IDLE_MS,MIN_INTERVAL_MS-(Date.now()-lastShown));
-      idleTimer=setTimeout(onIdle,wait);
-    };
-    // scroll capture intercetta anche lo scorrimento di pannelli e contenitori interni.
+    let idleTimer=null, hideTimer=null, lastShown=null, lastActivity=Date.now();
+    const IDLE_MS=2500, VISIBLE_MS=3200, MIN_INTERVAL_MS=30000;
+    const hideNotice=()=>{if(notice)notice.classList.remove('is-visible');clearTimeout(hideTimer);hideTimer=null;};
+    const pageVisible=()=>!document.hidden&&document.visibilityState==='visible';
+    const modalOpen=()=>!!document.querySelector('dialog[open]')||['kbReview','kbOverlay','vpConfirm','ctConfirm','iqConsentModal','shareModal','codeModal'].some(id=>{
+      const el=document.getElementById(id);return el&&!el.hidden&&!el.classList.contains('hidden')&&el.getClientRects().length>0;
+    });
+    function scheduleIdle(){
+      clearTimeout(idleTimer);idleTimer=null;
+      if(!notice||!pageVisible()||dialog.open)return;
+      const now=Date.now();
+      const quietRemaining=IDLE_MS-(now-lastActivity);
+      const pauseRemaining=lastShown===null?0:MIN_INTERVAL_MS-(now-lastShown);
+      idleTimer=setTimeout(onIdle,Math.max(quietRemaining,pauseRemaining,IDLE_MS));
+    }
+    function onIdle(){
+      idleTimer=null;
+      if(!pageVisible()||dialog.open)return;
+      if(modalOpen()||window.ecoNomyRequests?.busy){scheduleIdle();return;}
+      const now=Date.now();
+      if(now-lastActivity<IDLE_MS||(lastShown!==null&&now-lastShown<MIN_INTERVAL_MS)){scheduleIdle();return;}
+      notice.classList.add('is-visible');lastShown=now;
+      hideTimer=setTimeout(()=>{hideNotice();scheduleIdle();},VISIBLE_MS);
+    }
+    const activity=()=>{lastActivity=Date.now();hideNotice();scheduleIdle();};
+    // Scorrimento della pagina e dei pannelli interni: nascondere subito il messaggio.
     window.addEventListener('scroll',activity,{capture:true,passive:true});
     window.addEventListener('wheel',activity,{passive:true});
     window.addEventListener('touchmove',activity,{passive:true});
@@ -4375,16 +4381,16 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
     window.addEventListener('pointerdown',activity,{passive:true});
     window.addEventListener('keydown',activity);
     document.addEventListener('visibilitychange',()=>{
-      if(document.hidden){clearTimeout(idleTimer);hideNotice();}else activity();
+      if(!pageVisible()){clearTimeout(idleTimer);idleTimer=null;hideNotice();}else activity();
     });
-    const show=()=>{hideNotice();clearTimeout(idleTimer);displays=MAX_DISPLAYS;if(!dialog.open)dialog.showModal();};
+    const show=()=>{hideNotice();clearTimeout(idleTimer);idleTimer=null;if(!dialog.open)dialog.showModal();};
     const hide=()=>{if(dialog.open)dialog.close();};
     activity();
     open.addEventListener('click',show);
     close.addEventListener('click',hide);
     done.addEventListener('click',hide);
     dialog.addEventListener('click',event=>{if(event.target===dialog)hide();});
-    dialog.addEventListener('close',()=>{open.focus({preventScroll:true});});
+    dialog.addEventListener('close',()=>{open.focus({preventScroll:true});activity();});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
