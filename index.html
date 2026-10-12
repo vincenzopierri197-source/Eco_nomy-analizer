@@ -19,13 +19,13 @@
     <meta name="msapplication-TileColor" content="#0B2341">
     <meta name="msapplication-TileImage" content="./mstile-150x150.png">
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <!-- PDF.js per la lettura locale dei PDF nel browser (solo libreria, non i documenti). -->
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Marked.js per il parsing del Markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@18.0.14/lib/marked.umd.js" integrity="sha384-2vpGtuKqJvFlwJqYnf/wUMuzUfhUnYBt9oay0e2yaFcq0Dh6/aEbQ8YAOeKGzlYo" crossorigin="anonymous"></script>
     <!-- DOMPurify: HTML del Markdown ammesso solo dopo sanitizzazione. -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js" integrity="sha384-a7SzOxErzJ3ZpQz0zJ32d67dSitNzPcbfybc/ykU9KJhMgZkwqfSxlhhdJRS+XGL" crossorigin="anonymous"></script>
     <script>
 /* Rendering protetto, richieste interrompibili e backup cifrati. */
 function safeRenderMarkdown(value) {
@@ -916,6 +916,10 @@ window.ecoNomyBackup=(() => {
 .fc-case-row button.fc-delete{color:#a43a2e;border-color:#f3d0cd}
 @media(max-width:650px){.fc-body{padding:12px}.fc-cols,.fc-diff-cols,.fc-compare-controls{grid-template-columns:1fr}.fc-question{grid-template-columns:minmax(0,1fr) 105px auto}.fc-bar .fc-btn{flex:1}.fc-head{padding:14px}}
 </style>
+<style>
+.eco-warn{background:#fff8e6;border:1px solid #ecd9a0;color:#7a5200;border-radius:10px;padding:.55rem .75rem;font-size:.78rem;line-height:1.5;margin:.6rem 0}
+.eco-warn i{color:#c9890a;margin-right:.25rem}
+</style>
 </head>
 <body class="bg-gdf-lightbg text-slate-800 min-h-screen font-sans flex flex-col">
 
@@ -1065,7 +1069,7 @@ window.ecoNomyBackup=(() => {
             </div>
 
             <details class="eco-method-box no-print"><summary>Modelli personali di lavoro</summary>
-                <p>Strutture e domande riutilizzabili, senza conclusioni giuridiche precompilate. Sono salvate in questo browser.</p>
+                <p>Strutture e domande riutilizzabili, senza conclusioni giuridiche precompilate. Sono salvate in questo browser. <strong>Non inserire dati di casi reali o identificativi.</strong></p>
                 <label for="ecoTemplateSelect">Modello</label><select id="ecoTemplateSelect"></select>
                 <div class="fc-bar"><button id="ecoTemplateApply" type="button" class="fc-btn">Usa in un nuovo caso</button><button id="ecoTemplateEdit" type="button" class="fc-btn">Modifica struttura</button><button id="ecoTemplateNew" type="button" class="fc-btn">Nuovo modello</button></div>
                 <label for="ecoTemplateName">Nome<input id="ecoTemplateName" maxlength="100"></label><label for="ecoTemplateBody">Struttura da compilare<textarea id="ecoTemplateBody" maxlength="14000" placeholder="Inserisci sezioni e segnaposto, senza dati di un caso concreto."></textarea></label><label for="ecoTemplateQuestions">Domande iniziali<textarea id="ecoTemplateQuestions" maxlength="6000"></textarea></label>
@@ -1291,6 +1295,7 @@ window.ecoNomyBackup=(() => {
               <button type="button" class="eco-fold-toggle" data-eco-fold="fcRoot" aria-controls="fcRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="fc-body">
                 <p class="fc-info"><strong>Archivio locale indipendente dalla cronologia delle conversazioni.</strong> Le istantanee sono salvate in IndexedDB nel browser di questo dispositivo, senza API e senza caricare PDF. La funzione confronta <strong>differenze testuali</strong> e note inserite dall'operatore: non certifica fatti, prove o ricostruzioni giuridiche. Per non perdere i dati, esporta regolarmente il fascicolo. Il <strong>backup protetto</strong> è cifrato con password; i dati conservati nel browser e il JSON non cifrato restano leggibili sul dispositivo.</p>
+                <p class="eco-warn"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Non salvare nel fascicolo nominativi, dati identificativi o atti riservati.</strong> I dati restano leggibili da chiunque usi questo dispositivo: su un computer condiviso esporta con password e cancella il fascicolo a fine lavoro.</p>
                 <div class="fc-bar"><button id="fcSave" type="button" class="fc-btn fc-primary"><i class="fa-solid fa-camera"></i> Salva versione</button><button id="fcExport" type="button" class="fc-btn"><i class="fa-solid fa-file-export"></i> Esporta backup protetto</button><button id="fcExportPlain" type="button" class="fc-btn">JSON non cifrato</button><button id="fcImport" type="button" class="fc-btn"><i class="fa-solid fa-file-import"></i> Importa backup</button><input id="fcImportFile" type="file" accept=".json,application/json" hidden><button id="fcRestore" type="button" class="fc-btn fc-btn-gold"><i class="fa-solid fa-rotate-left"></i> Riprendi versione come nuovo caso</button></div>
                 <p id="fcStatus" class="fc-status" role="status" aria-live="polite">Caricamento archivio locale…</p><p id="fcFactWarning" class="fc-warning" hidden><strong>Attenzione:</strong> il quadro fattuale è stato modificato dopo l’elaborazione. La modifica può essere salvata nel fascicolo, ma <strong>non aggiorna il report già prodotto</strong> né l’input precedente di Gemini. Per analizzare i nuovi elementi genera una nuova elaborazione o comunicali esplicitamente nel follow-up.</p>
                 <div id="fcWork" class="fc-editor fc-hidden" hidden>
@@ -1372,6 +1377,7 @@ window.ecoNomyBackup=(() => {
           <summary><span class="kb-summary-left"><span class="kb-num">MOD 03</span><span><span class="kb-ttl"><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Biblioteca Giuridica</span><span class="kb-subttl">Sinossi PDF dal tuo Mac · Ricerca per pagina · Lettore PDF integrato</span></span></span><i class="fa-solid fa-chevron-down kb-caret" aria-hidden="true"></i></summary>
           <div class="kb-content">
             <p class="kb-intro">Seleziona la cartella <b>Materiale gem</b> dal Finder oppure scegli singoli PDF. I file vengono letti <b>solo dal browser</b>: nessun caricamento su GitHub, Firebase o Gemini per questa ricerca. Dopo aver ricaricato la pagina dovrai selezionare nuovamente i documenti.</p>
+            <p class="eco-warn"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Usa solo materiale pubblico o di consultazione</strong> (norme, dottrina, giurisprudenza). Non inserire atti riservati, coperti da segreto o con dati identificativi: gli estratti approvati con «Usa nell'analisi» vengono inviati a Gemini.</p>
             <div class="kb-actions">
               <button type="button" class="kb-btn kb-btn-primary" id="kbChooseFolder"><i class="fa-solid fa-folder-open"></i> Seleziona cartella PDF</button>
               <button type="button" class="kb-btn" id="kbChooseFiles"><i class="fa-solid fa-file-pdf"></i> Seleziona singoli PDF</button>
