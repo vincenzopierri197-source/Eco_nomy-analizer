@@ -1127,23 +1127,8 @@ window.ecoNomyBackup=(() => {
 
 </style>
 <style>
-/* Prosegui la conversazione: fisso e sempre visibile (barra in basso; nel margine sinistro sugli schermi molto larghi) */
-body #followUpBox:not(.hidden){position:fixed;z-index:45;left:1rem;right:6.5rem;bottom:.75rem;max-width:1100px;margin:0 auto;padding:.7rem .9rem;border:1px solid rgba(212,175,55,.4);border-radius:16px;background:rgba(9,24,44,.96);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 40px rgba(0,0,0,.45);color:#dbe5f0}
-body #followUpBox .eco-follow-heading,body #followUpBox label{color:#eaf1f8}
-body #followUpBox textarea{background:#0f2d52;border-color:#2b5282;color:#fff;min-height:3.2rem}
-body #followUpBox textarea::placeholder{color:#7f96b2}
-body #followUpBox .eco-fold-toggle{margin:.35rem 0}
-body #followUpBox #followBtn{background:linear-gradient(105deg,#ebcf72,#D4AF37);color:#0B2341;border:1px solid #c9a42f}
-body:has(#followUpBox:not(.hidden)) .site-main{padding-bottom:12rem}
-body:has(.site-main[data-view="input"]) #followUpBox,body:has(.site-main[data-view="library"]) #followUpBox{display:none!important}
-@media(max-width:640px){body #followUpBox:not(.hidden){left:.5rem;right:.5rem;bottom:.5rem}}
-@media(min-width:2100px){
-  body #followUpBox:not(.hidden){left:1rem;right:auto;bottom:auto;top:7.5rem;width:calc((100vw - 1500px)/2 - 2rem);max-width:420px;max-height:calc(100vh - 9rem);overflow:auto}
-  body #followUpBox .flex.items-end{flex-direction:column;align-items:stretch}
-  body #followUpBox textarea{min-height:9rem}
-  body:has(#followUpBox:not(.hidden)) .site-main{padding-bottom:32px}
-}
-@media print{#followUpBox{display:none!important}}
+#followUpBox>.eco-fold-toggle{margin:12px 18px}
+#followUpBox .eco-follow-body{padding:0 18px 16px}
 </style>
 </head>
 <body class="eco-tech bg-gdf-lightbg text-slate-800 min-h-screen font-sans flex flex-col">
@@ -1478,6 +1463,27 @@ body:has(.site-main[data-view="input"]) #followUpBox,body:has(.site-main[data-vi
                 <p class="text-xs text-slate-400 mt-1">Sviluppo del riscontro logico e della qualificazione giuridica</p>
             </div>
 
+            <!-- Prosegui la conversazione: prima voce degli strumenti, sopra al Verificatore. -->
+            <div id="followUpBox" class="eco-foldable nv-root hidden no-print" aria-label="Prosegui la conversazione">
+                <div class="nv-head"><span class="nv-head-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span><div><h3>Conversazione sul caso</h3><p>Domande di approfondimento · Nuovi elementi fattuali · Stesso contesto del report</p></div></div>
+                <button type="button" class="eco-fold-toggle" data-eco-fold="followUpBox" aria-controls="ecoFollowBody" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Prosegui la conversazione</button>
+                <div id="ecoFollowBody" class="eco-follow-body">
+                <p id="followHint" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2"></p>
+                <label for="followUpInput" class="block text-xs font-semibold text-slate-700 mb-1">
+                    <i class="fa-solid fa-comments text-gdf-gold mr-1"></i>Prosegui questa conversazione:
+                </label>
+                <div class="flex gap-2 items-end">
+                    <textarea id="followUpInput" rows="2" placeholder="Es. Approfondisci il punto 3, oppure aggiungi un nuovo elemento fattuale... (Ctrl+Invio per inviare)"
+                              class="flex-1 p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gdf-blue focus:border-transparent resize-y bg-slate-50 text-slate-800"></textarea>
+                    <button id="followBtn" onclick="sendFollowUp()" class="px-4 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i><span>Invia</span>
+                    </button>
+                </div>
+                <p id="followStatus" class="hidden text-xs text-gdf-blue font-semibold mt-2"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Elaborazione in corso...</p>
+                <p id="followError" class="hidden text-xs text-red-600 mt-2"></p>
+                </div>
+            </div>
+
             <!-- Verificatore: controllo locale o seconda lettura critica soltanto su comando. -->
             <section id="vpRoot" class="eco-foldable vp-root no-print" aria-label="Verificatore giuridico-probatorio" hidden>
               <div class="vp-heading"><span class="vp-emblem"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><div><h3>Verificatore giuridico-probatorio</h3><p>Seconda lettura critica · Riscontri documentali verificabili · Nessuna modifica automatica del report</p></div></div>
@@ -1611,26 +1617,6 @@ body:has(.site-main[data-view="input"]) #followUpBox,body:has(.site-main[data-vi
                 <div id="prPreview" class="pr-preview" role="region" aria-label="Anteprima del documento" tabindex="0" hidden></div>
               </div>
             </section>
-            <!-- Prosegui la conversazione -->
-            <div id="followUpBox" class="eco-foldable hidden mt-4 pt-4 border-t border-slate-200 no-print">
-                <h3 class="eco-follow-heading">Prosegui la conversazione</h3>
-                <button type="button" class="eco-fold-toggle" data-eco-fold="followUpBox" aria-controls="ecoFollowBody" aria-expanded="false">Apri pannello</button>
-                <div id="ecoFollowBody">
-                <p id="followHint" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2"></p>
-                <label for="followUpInput" class="block text-xs font-semibold text-slate-700 mb-1">
-                    <i class="fa-solid fa-comments text-gdf-gold mr-1"></i>Prosegui questa conversazione:
-                </label>
-                <div class="flex gap-2 items-end">
-                    <textarea id="followUpInput" rows="2" placeholder="Es. Approfondisci il punto 3, oppure aggiungi un nuovo elemento fattuale... (Ctrl+Invio per inviare)"
-                              class="flex-1 p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gdf-blue focus:border-transparent resize-y bg-slate-50 text-slate-800"></textarea>
-                    <button id="followBtn" onclick="sendFollowUp()" class="px-4 py-2 bg-gdf-blue hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow transition flex items-center gap-2">
-                        <i class="fa-solid fa-paper-plane"></i><span>Invia</span>
-                    </button>
-                </div>
-                <p id="followStatus" class="hidden text-xs text-gdf-blue font-semibold mt-2"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Elaborazione in corso...</p>
-                <p id="followError" class="hidden text-xs text-red-600 mt-2"></p>
-                </div>
-            </div>
         </section>
 
 
@@ -4546,7 +4532,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      e.el.classList.toggle('eco-folded',closed);
      e.btn.setAttribute('aria-expanded',String(!closed));
      const label=e.id==='outputArea'?'risposta principale':'pannello';
-     e.btn.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(closed?'Apri ':'Chiudi ')+label;
+     e.btn.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(e.id==='followUpBox'?'Prosegui la conversazione':(closed?'Apri ':'Chiudi ')+label);
      e.btn.setAttribute('aria-label',(closed?'Apri ':'Chiudi ')+names[e.id]);
    }
    function openOnly(id){
@@ -5481,9 +5467,5 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 
 
 
-<script>
-/* Sposta il riquadro "Prosegui la conversazione" sotto <body>, così resta fisso rispetto alla finestra */
-(function(){var f=document.getElementById('followUpBox');if(f&&f.parentElement!==document.body)document.body.appendChild(f);})();
-</script>
 </body>
 </html>
