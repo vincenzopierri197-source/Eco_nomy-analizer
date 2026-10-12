@@ -23,6 +23,70 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Marked.js per il parsing del Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- DOMPurify: HTML del Markdown ammesso solo dopo sanitizzazione. -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js"></script>
+    <script>
+/* Rendering protetto, richieste interrompibili e backup cifrati. */
+function safeRenderMarkdown(value) {
+  const text = String(value ?? '');
+  const escape = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  // Se una libreria non si carica, mostra solo testo: mai HTML non sanificato.
+  if (!window.marked?.parse || !window.DOMPurify?.isSupported) return '<pre>'+escape(text)+'</pre>';
+  return window.DOMPurify.sanitize(window.marked.parse(text), {
+    ALLOWED_TAGS:['p','br','hr','h1','h2','h3','h4','h5','h6','strong','b','em','i','s','del','blockquote','ul','ol','li','pre','code','table','thead','tbody','tfoot','tr','th','td','a'],
+    ALLOWED_ATTR:['href','title','colspan','rowspan','start'],
+    ALLOW_DATA_ATTR:false, ALLOW_ARIA_ATTR:false,
+    ALLOWED_URI_REGEXP:/^(?:https?:\/\/|mailto:|#)/i
+  });
+}
+function getGeminiApiKey() {
+  const entered = document.getElementById('apiKeyInput')?.value.trim();
+  if (entered) return entered;
+  try { return sessionStorage.getItem('gdf_gemini_api_key') || ''; } catch (_) { return ''; }
+}
+const ecoGeminiRequests = (() => {
+  const active = new Set();
+  function update() {
+    const box=document.getElementById('ecoRequestControls'), label=document.getElementById('ecoRequestStatus');
+    if(box)box.hidden=!active.size;
+    if(label)label.textContent=active.size?`${active.size} elaborazion${active.size===1?'e':'i'} in corso`:'';
+  }
+  return {
+    begin(){const feedback=document.getElementById('ecoRequestFeedback');if(feedback)feedback.textContent='';const controller=new AbortController();active.add(controller);update();window.ecoNomyCases?.refresh();return controller;},
+    end(controller){active.delete(controller);update();window.ecoNomyCases?.refresh();},
+    cancel(){if(active.size){const feedback=document.getElementById('ecoRequestFeedback');if(feedback)feedback.textContent='Interruzione richiesta. Il servizio potrebbe avere già elaborato i dati inviati.';}active.forEach(controller=>controller.abort());},
+    get busy(){return active.size>0;}
+  };
+})();
+window.ecoNomyRequests=ecoGeminiRequests;
+window.ecoNomyBackup=(() => {
+  const format='eco-nomy-backup-cifrato-v1',iterations=600000,maxBytes=25*1024*1024;
+  const encoder=new TextEncoder();
+  function ready(){if(!window.crypto?.subtle)throw new Error('Cifratura non disponibile: apri il sito tramite HTTPS o localhost.');}
+  function b64(bytes){let raw='';for(let i=0;i<bytes.length;i+=8192)raw+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(raw);}
+  function unb64(text,max){if(typeof text!=='string'||text.length>Math.ceil(max/3)*4||text.length%4||!/^[A-Za-z0-9+/]*={0,2}$/.test(text))throw new Error('Backup cifrato non valido.');const raw=atob(text);if(raw.length>max)throw new Error('Backup cifrato troppo grande.');return Uint8Array.from(raw,c=>c.charCodeAt(0));}
+  async function key(password,salt,usage){const material=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt,iterations},material,{name:'AES-GCM',length:256},false,[usage]);}
+  async function encrypt(data,password){ready();if(typeof password!=='string'||password.length<12)throw new Error('Usa una password di almeno 12 caratteri.');const plain=encoder.encode(JSON.stringify(data));if(plain.length>maxBytes)throw new Error('Backup oltre 25 MB.');const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));const secret=await key(password,salt,'encrypt');const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encoder.encode(format),tagLength:128},secret,plain);return {format,kdf:'PBKDF2-SHA-256',iterations,cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ct:b64(new Uint8Array(ct))};}
+  async function decrypt(envelope,password){ready();if(envelope?.format!==format||envelope.kdf!=='PBKDF2-SHA-256'||envelope.iterations!==iterations||envelope.cipher!=='AES-256-GCM')throw new Error('Formato cifrato non supportato.');const salt=unb64(envelope.salt,16),iv=unb64(envelope.iv,12),ct=unb64(envelope.ct,maxBytes+16);if(salt.length!==16||iv.length!==12||ct.length<16)throw new Error('Parametri del backup cifrato non validi.');const secret=await key(password,salt,'decrypt');let plain;try{plain=await crypto.subtle.decrypt({name:'AES-GCM',iv,additionalData:encoder.encode(format),tagLength:128},secret,ct);}catch(_){throw new Error('Password errata o backup alterato/danneggiato.');}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(plain));}
+  function askPassword(exporting){
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');dialog.className='eco-password-dialog';
+      dialog.setAttribute('aria-labelledby','ecoPasswordTitle');
+      dialog.innerHTML='<form><h3 id="ecoPasswordTitle"></h3><p id="ecoPasswordHelp"></p><label>Password<input id="ecoBackupPassword" type="password" autocomplete="off" required maxlength="1024"></label><label id="ecoPasswordRepeatLabel">Ripeti password<input id="ecoBackupPasswordRepeat" type="password" autocomplete="off" maxlength="1024"></label><p id="ecoPasswordError" role="alert"></p><div><button type="submit" data-cancel="true" formnovalidate>Annulla</button><button type="submit">Continua</button></div></form>';
+      dialog.querySelector('h3').textContent=exporting?'Esporta backup protetto':'Apri backup protetto';
+      dialog.querySelector('#ecoPasswordHelp').textContent=exporting?'Scegli una password di almeno 12 caratteri e conservala separatamente: senza password il backup non è recuperabile. La password non viene salvata.':'Inserisci la password scelta durante l’esportazione. La decifratura avviene nel browser.';
+      const pass=dialog.querySelector('#ecoBackupPassword'),repeat=dialog.querySelector('#ecoBackupPasswordRepeat');
+      if(exporting){pass.minLength=12;repeat.required=true;}else dialog.querySelector('#ecoPasswordRepeatLabel').hidden=true;
+      let result=null;
+      dialog.querySelector('form').addEventListener('submit',event=>{event.preventDefault();if(event.submitter?.dataset.cancel==='true'){dialog.close();return;}if(exporting&&(pass.value.length<12||pass.value!==repeat.value)){dialog.querySelector('#ecoPasswordError').textContent='Inserisci almeno 12 caratteri e due password identiche.';return;}result=pass.value;dialog.close();});
+      dialog.addEventListener('close',()=>{pass.value='';repeat.value='';dialog.remove();resolve(result);},{once:true});
+      document.body.append(dialog);dialog.showModal();pass.focus();
+    });
+  }
+  return {format,encrypt,decrypt,askPassword};
+})();
+
+    </script>
     <!-- FontAwesome per le icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -349,7 +413,7 @@
             opacity:0;pointer-events:none;
         }
         @media (min-width:961px) {
-            .site-main {grid-template-rows:auto minmax(690px,auto);}
+            .site-main {grid-template-rows:auto auto minmax(690px,auto);}
         }
         .site-main[data-view=input] .report-panel,
         .site-main[data-view=report] .input-panel {padding:0;min-height:0;border-color:#b9a15d;background:linear-gradient(180deg,#0b2846,#113a5e);box-shadow:0 10px 28px rgba(6,25,44,.17);}
@@ -473,14 +537,71 @@
  @page{size:A4;margin:18mm 16mm 18mm 16mm}
 }
 
+
+.eco-request-controls{display:flex;align-items:center;gap:10px;font-size:12px;color:#fff;flex-wrap:wrap}
+.eco-request-controls[hidden]{display:none!important}
+.eco-request-controls button{background:#fff4d5;color:#713f12;border-radius:8px;padding:7px 10px;font-weight:700}
+.eco-request-feedback{margin:0;padding:0 25px;color:#713f12;font-size:12px;background:#fffbeb}
+.eco-request-feedback:not(:empty){padding:9px 25px}
+.eco-storage-note{font-size:11px;line-height:1.6;color:#486076;margin:0 0 12px;padding:10px;background:#f0f5fa;border-radius:8px}
+.eco-password-dialog{max-width:min(440px,calc(100vw - 26px));border:1px solid #b6cbdc;border-radius:14px;padding:22px;background:#fff;color:#123554}
+.eco-password-dialog::backdrop{background:#071a3099}
+.eco-password-dialog h3{font-weight:800;font-size:18px;margin-bottom:12px}
+.eco-password-dialog p{font-size:12px;line-height:1.6;margin-bottom:14px}
+.eco-password-dialog label{display:block;font-size:13px;font-weight:700;margin-bottom:12px}
+.eco-password-dialog label[hidden]{display:none}
+.eco-password-dialog input{display:block;width:100%;padding:9px;border:1px solid #b6cbdc;border-radius:8px;margin-top:5px}
+.eco-password-dialog form>div{display:flex;gap:8px;justify-content:flex-end}
+.eco-password-dialog button{padding:8px 14px;background:#123554;color:#fff;border-radius:8px}
+#ecoPasswordError{color:#b91c1c}
+@media(max-width:640px){.eco-module-nav-inner{flex-wrap:wrap}.eco-request-controls{width:100%;justify-content:space-between}.eco-request-controls+ .module-switcher{width:100%}}
+
+.eco-case-bar{order:-2;grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:17px 20px;background:#fff;border:1px solid #b6cbdc;border-left:4px solid #d4af37;border-radius:14px}
+.eco-case-summary{flex:1;min-width:0}.eco-case-summary>small{font-size:10px;font-weight:800;letter-spacing:.1em;color:#52718a}
+.eco-case-summary h2{font-size:17px;font-weight:800;color:#123554;overflow-wrap:anywhere;margin:3px 0}
+.eco-case-summary p{font-size:11px;color:#64748b;overflow-wrap:anywhere}.eco-case-summary>span{font-size:11px;color:#123554;background:#edf4fa;border-radius:7px;padding:4px 8px;display:inline-block;margin-top:7px}
+.eco-case-actions{display:flex;flex-wrap:wrap;gap:8px}.eco-case-actions button,.eco-case-row button{border:1px solid #b6cbdc;border-radius:8px;padding:9px 12px;color:#123554;background:#f5f9fc;font-size:12px;font-weight:700}
+.eco-case-actions button:first-child{background:#123554;color:#fff}.eco-case-actions button:disabled{opacity:.45;cursor:not-allowed}
+.eco-case-notice{width:100%;font-size:12px;line-height:1.6;color:#854d0e}.eco-case-notice:empty{display:none}
+.eco-case-dialog{width:760px;max-width:calc(100vw - 26px);max-height:85dvh;padding:22px;border:1px solid #b6cbdc;border-radius:16px;color:#123554;overflow-y:auto;background:#fff}
+.eco-case-dialog::backdrop{background:#071a3099}.eco-case-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.eco-case-dialog h2{font-weight:800;font-size:20px}.eco-case-dialog-head button{font-size:26px;padding:0 9px}
+.eco-case-dialog p{font-size:12px;line-height:1.6;margin:12px 0}.eco-case-dialog label{font-size:12px;font-weight:700}.eco-case-dialog input{width:100%;padding:10px;border:1px solid #b6cbdc;border-radius:8px;margin:6px 0}
+.eco-case-list{display:flex;flex-direction:column;gap:9px}.eco-case-row{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #dbe4ed;border-radius:10px;padding:12px}.eco-case-row>div{min-width:0}.eco-case-row strong{display:block;font-size:13px;overflow-wrap:anywhere}.eco-case-row small{display:block;font-size:11px;color:#64748b;margin-top:5px;overflow-wrap:anywhere}
+.eco-recent-case-row{display:flex;gap:8px;align-items:center;border:1px solid #dbe4ed;background:#f8fafc;border-radius:8px;padding:8px}.eco-recent-case-row.is-active{border-color:#b79b50}.eco-recent-case-open{flex:1;min-width:0;text-align:left}.eco-recent-case-open strong{display:block;font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.eco-recent-case-open small{display:block;font-size:10px;color:#64748b}.eco-recent-case-row>button:last-child{font-size:18px;padding:0 5px}
+.eco-module-nav-title{max-width:40%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:640px){.eco-case-bar{padding:14px}.eco-case-summary{flex-basis:100%}.eco-case-actions{width:100%}.eco-case-actions button{flex:1}.eco-case-dialog{padding:16px}.eco-case-row{flex-wrap:wrap}}
+
+
+.cp-root{margin-top:18px;border:1px solid #b6cbdc;border-radius:14px;background:#f8fbfd;overflow:hidden}
+.cp-head{padding:16px 18px;background:#edf4fa}.cp-head h3{font-size:16px;font-weight:800;color:#123554}.cp-head p{font-size:11px;color:#52718a;margin-top:5px}
+.cp-root>.eco-fold-toggle{margin-left:18px}.cp-body{padding:0 18px 18px}.cp-note{font-size:12px;line-height:1.7;color:#486076;margin:0 0 14px}.cp-body label{font-size:12px;font-weight:700;display:block}.cp-body select{width:100%;padding:9px;border:1px solid #b6cbdc;border-radius:8px;background:#fff;margin-top:6px}
+#cpStatus,#cpSummary{font-size:12px;line-height:1.65;margin:12px 0}#cpStatus.cp-stale{padding:9px;background:#fff4d5;color:#854d0e;border-radius:8px}
+.cp-original{margin:12px 0;font-size:12px}.cp-original summary{cursor:pointer;font-weight:700}.cp-original pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow-y:auto;font:12px/1.7 system-ui;background:#fff;border:1px solid #dbe4ed;border-radius:8px;padding:12px;margin-top:9px}
+.cp-table-wrap{overflow-x:auto}.cp-table-wrap table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}.cp-table-wrap th,.cp-table-wrap td{border:1px solid #dbe4ed;padding:10px;text-align:left;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;min-width:140px}.cp-table-wrap th{background:#123554;color:#fff}.cp-table-wrap td small{display:block;font-size:10px;color:#64748b;margin-top:8px}
+
+/* Selettore unico, sempre disponibile anche nei report lunghi. */
+.eco-module-nav{position:sticky;top:0;z-index:90;flex-shrink:0;background:#0b2846;border-bottom:1px solid #b79b50;box-shadow:0 3px 12px #071a3026}
+.eco-module-nav-inner{max-width:1500px;margin:auto;padding:9px 25px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.eco-module-nav-title{font-size:12px;font-weight:700;color:#d9e9f2}
+.eco-module-nav .module-switcher{width:auto;justify-content:flex-end}
+.eco-module-nav .module-switcher-trigger{min-height:42px}
+.eco-module-nav .module-view-menu{max-height:calc(100dvh - 78px);overflow-y:auto}
+#quadro-fattuale,#report-operativo,#biblioteca-giuridica,#outputArea{scroll-margin-top:80px}
+@media(max-width:640px){.eco-module-nav-inner{padding:7px 13px}.eco-module-nav .module-switcher-label{display:none}.eco-module-nav-title{display:block;max-width:100%;width:100%;font-size:11px}.eco-module-nav .module-switcher{width:100%}.eco-module-nav .module-switcher-trigger{width:100%;min-width:0}}
+
 /* Modulo 02: pannelli richiudibili senza distruggere i dati */
 .eco-foldable{position:relative}
-.eco-foldable.eco-folded > :not(.eco-fold-toggle):not(.vp-heading):not(.ct-head):not(.nv-head):not(.fc-head):not(.pr-head){display:none!important}
+.eco-foldable.eco-folded > :not(.eco-fold-toggle):not(.vp-heading):not(.ct-head):not(.nv-head):not(.fc-head):not(.pr-head):not(.cp-head){display:none!important}
 .eco-fold-toggle{display:inline-flex;align-items:center;gap:8px;justify-content:center;border:1px solid #b6cbdc;background:#f5f9fc;color:#123554;border-radius:9px;padding:8px 12px;margin:10px 0;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s}
 .eco-fold-toggle:hover{background:#e7f0f7}
 .eco-fold-toggle:focus-visible{outline:3px solid #d4af37;outline-offset:2px}
 #outputArea.eco-folded{display:none!important}
 .eco-report-toggle{margin:0 0 12px 0}
+.eco-fold-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.eco-fold-tools .eco-fold-toggle{margin:0}
+.eco-fold-help{font-size:11px;color:#64748b;flex:1 1 200px}
+.eco-follow-heading{font-size:13px;font-weight:700;color:#123554}
+.eco-foldable.eco-folded > .eco-follow-heading{display:block!important}
 @media print{.eco-fold-toggle{display:none!important}.eco-foldable.eco-folded > :not(.eco-fold-toggle){display:block!important}#outputArea.eco-folded{display:block!important}}
 </style>
     <style>
@@ -808,7 +929,7 @@
                 <div class="auth-key-symbol"><i class="fa-solid fa-key" aria-hidden="true"></i></div>
                 <span class="portal-auth-label">Accesso<br>API Gemini</span>
                 <input type="password" id="apiKeyInput" placeholder="Inserisci API Key Google Gemini..." autocomplete="off" aria-label="API Key Google Gemini">
-                <button onclick="saveApiKey()" type="button">Salva</button>
+                <button onclick="saveApiKey()" type="button" title="Conserva la chiave solo nella sessione di questa scheda">Salva sessione</button>
             </div>
         </div>
     </header>
@@ -828,15 +949,13 @@
     </div>
 
     <!-- Main Content -->
-    <main class="site-main" id="workspace">
-        <!-- Command bar descrittiva: nessun dato o stato fittizio -->
-        <div class="portal-command no-print">
-            <div>
-                <div class="command-kicker"><span class="line"></span> AREA DI LAVORO / ANALISI GIURIDICO-OPERATIVA</div>
-                <h2>Portale di analisi penal-tributaria</h2>
-                <p>Dal quadro fattuale alla valutazione probatoria, fino alla redazione del report.</p>
+    <nav class="eco-module-nav no-print" aria-label="Navigazione tra i moduli">
+        <div class="eco-module-nav-inner">
+            <span class="eco-module-nav-title" id="ecoActiveCaseShort">Caso: Nuovo caso</span>
+            <div id="ecoRequestControls" class="eco-request-controls" hidden>
+                <span id="ecoRequestStatus" role="status" aria-live="polite"></span>
+                <button type="button" onclick="ecoGeminiRequests.cancel()">Interrompi elaborazioni</button>
             </div>
-            <div class="portal-command-side">
                 <!-- Menu a comparsa: seleziona il modulo in primo piano senza perdere i dati -->
                 <div class="module-switcher no-print" id="moduleSwitcher">
                     <span class="module-switcher-label">Vista moduli</span>
@@ -845,13 +964,36 @@
                         <span id="moduleViewName" aria-live="polite">Entrambi i moduli</span>
                         <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                     </button>
-                    <div class="module-view-menu" id="moduleViewMenu" role="group" aria-label="Selezione modulo da espandere" hidden>
+                    <div class="module-view-menu" id="moduleViewMenu" role="radiogroup" aria-label="Selezione modulo da espandere" hidden>
                         <button type="button" class="module-view-choice" data-module-view="both" aria-checked="true" role="radio"><span class="choice-icon"><i class="fa-solid fa-table-columns"></i></span><span class="choice-text"><span class="choice-title">Entrambi i moduli</span><span class="choice-subtitle">Vista affiancata originale</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                         <button type="button" class="module-view-choice" data-module-view="input" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-folder-open"></i></span><span class="choice-text"><span class="choice-title">Modulo 01 · Quadro fattuale</span><span class="choice-subtitle">Spazio massimo per dati e allegati</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                         <button type="button" class="module-view-choice" data-module-view="report" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-file-contract"></i></span><span class="choice-text"><span class="choice-title">Modulo 02 · Report</span><span class="choice-subtitle">Spazio massimo per analisi e risultati</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                         <button type="button" class="module-view-choice" data-module-view="library" aria-checked="false" role="radio"><span class="choice-icon"><i class="fa-solid fa-book-open-reader"></i></span><span class="choice-text"><span class="choice-title">Modulo 03 · Biblioteca Giuridica</span><span class="choice-subtitle">Sinossi PDF locali, ricerca e lettura</span></span><i class="fa-solid fa-check choice-check" aria-hidden="true"></i></button>
                     </div>
                 </div>
+        </div>
+    </nav>
+    <p id="ecoRequestFeedback" class="eco-request-feedback no-print" role="status" aria-live="polite"></p>
+    <dialog id="ecoCaseDialog" class="eco-case-dialog no-print" aria-labelledby="ecoCaseDialogTitle">
+        <div class="eco-case-dialog-head"><h2 id="ecoCaseDialogTitle">Riprendi un caso</h2><button type="button" onclick="document.getElementById('ecoCaseDialog').close()" aria-label="Chiudi elenco casi">×</button></div>
+        <p>Bozze, analisi recenti e fascicoli di questo browser. I fascicoli usciti dalle recenti si riprendono dalla versione salvata.</p>
+        <label for="ecoCaseSearch">Cerca per titolo o identificativo</label><input id="ecoCaseSearch" type="search" oninput="renderCaseManagerList()" autocomplete="off">
+        <p id="ecoCaseManagerStatus" role="status" aria-live="polite"></p><div id="ecoCaseList" class="eco-case-list"></div>
+    </dialog>
+    <main class="site-main" id="workspace">
+        <section class="eco-case-bar no-print" aria-label="Caso attivo">
+            <div class="eco-case-summary"><small>CASO ATTIVO</small><h2 id="ecoActiveCaseTitle">Nuovo caso</h2><p id="ecoActiveCaseMeta"></p><span id="ecoActiveCaseState" role="status" aria-live="polite">Da iniziare</span></div>
+            <div class="eco-case-actions"><button type="button" id="newFactualCaseBtn" onclick="startNewFactualCase()">+ Nuovo caso</button><button type="button" onclick="openCaseManager()">Riprendi</button><button type="button" id="ecoDuplicateCase" onclick="duplicateCurrentCase()" disabled>Duplica</button></div>
+            <p id="ecoCaseNotice" class="eco-case-notice"></p>
+        </section>
+        <!-- Command bar descrittiva: nessun dato o stato fittizio -->
+        <div class="portal-command no-print">
+            <div>
+                <div class="command-kicker"><span class="line"></span> AREA DI LAVORO / ANALISI GIURIDICO-OPERATIVA</div>
+                <h2>Portale di analisi penal-tributaria</h2>
+                <p>Dal quadro fattuale alla valutazione probatoria, fino alla redazione del report.</p>
+            </div>
+            <div class="portal-command-side">
                 <div class="portal-steps" aria-label="Fasi del flusso di lavoro">
                     <div class="portal-step"><span class="step-number">01</span><span class="step-word"><small>Input</small>Quadro fattuale</span></div>
                     <div class="portal-step"><span class="step-number">02</span><span class="step-word"><small>Metodo</small>Analisi giuridica</span></div>
@@ -914,9 +1056,7 @@
             <div class="flex-1 flex flex-col mb-4">
                 <div class="factual-description-heading">
                     <label for="promptInput" class="form-section-label"><span class="mini-index">01.3</span> Descrizione del quadro fattuale</label>
-                    <button type="button" class="factual-new-button no-print" id="newFactualCaseBtn" onclick="startNewFactualCase()" title="Apri un nuovo quadro fattuale senza eliminare quello corrente">
-                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Nuovo quadro
-                    </button>
+
                 </div>
                 <textarea id="promptInput" placeholder="Es. Descrivi il caso fattuale da analizzare..." 
                           class="w-full flex-1 min-h-[180px] p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gdf-blue focus:border-transparent resize-none bg-slate-50 text-slate-800"></textarea>
@@ -964,7 +1104,7 @@
                 </button>
             </div>
 
-            <!-- Analisi Recenti -->
+            <!-- Analisi Recenti: elenco limitato, diverso dal fascicolo -->
             <div class="recent-panel no-print">
                 <div class="flex items-center justify-between mb-3 gap-2">
                     <h3 class="text-sm font-bold text-gdf-blue flex items-center gap-2">
@@ -981,6 +1121,7 @@
                     <div class="factual-drafts-title"><span><i class="fa-solid fa-note-sticky mr-1" aria-hidden="true"></i>Quadri in bozza</span><small>Salvati nel browser</small></div>
                     <div id="factualDraftsList" class="factual-drafts-list"></div>
                 </div>
+                <p class="eco-storage-note">Le <strong>Analisi recenti</strong> conservano fino a 20 conversazioni: le più vecchie escono dall’elenco. Il <strong>Fascicolo digitale</strong> ha un archivio separato nel browser. Esporta un backup per conservarlo fuori dal dispositivo; PDF e allegati binari non sono inclusi.</p>
                 <div id="historyList" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
                 <div id="historyNote" class="mt-2"></div>
             </div>
@@ -1015,6 +1156,13 @@
                 <span class="info-chip"><i class="fa-solid fa-scale-balanced"></i> Qualificazione giuridica</span>
                 <span class="info-chip"><i class="fa-solid fa-shield-halved"></i> Criticità probatorie</span>
                 <span class="info-chip"><i class="fa-solid fa-list-check"></i> Raccomandazioni operative</span>
+            </div>
+
+            <div class="eco-fold-tools no-print" role="group" aria-label="Gestione pannelli del Modulo 2">
+                <button type="button" id="ecoOpenAll" class="eco-fold-toggle">Apri tutto</button>
+                <button type="button" id="ecoCloseAll" class="eco-fold-toggle">Chiudi tutto</button>
+                <span class="eco-fold-help">Aprendo una sezione, le altre si richiudono. Con «Apri tutto» puoi consultarle insieme.</span>
+                <span id="ecoFoldStatus" class="sr-only" role="status" aria-live="polite"></span>
             </div>
 
             <button type="button" id="ecoReportFoldBtn" class="eco-fold-toggle eco-report-toggle no-print" aria-controls="outputArea" aria-expanded="true"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i> Chiudi risposta principale</button>
@@ -1097,13 +1245,25 @@
             </section>
 
 
+            <section id="cpRoot" class="eco-foldable cp-root no-print" aria-label="Confronto report e verifiche" hidden>
+                <div class="cp-head"><h3>Confronto report e verifiche</h3><p>Report esaminato · Criticità · Ipotesi alternative · Riscontri normativi</p></div>
+                <button type="button" class="eco-fold-toggle" data-eco-fold="cpRoot" aria-controls="cpBody" aria-expanded="false">Apri pannello</button>
+                <div class="cp-body" id="cpBody">
+                    <p class="cp-note">Le verifiche aggiungono osservazioni: non riscrivono il report. Il confronto è locale, senza nuove chiamate AI. I riscontri normativi sono dichiarati dall’operatore; le osservazioni AI richiedono controllo sulle fonti.</p>
+                    <label for="cpSource">Confronta con</label><select id="cpSource"><option value="verifier">Verificatore giuridico-probatorio</option><option value="contraddittorio">Contraddittorio</option><option value="normativa">Controllo della normativa</option></select>
+                    <p id="cpStatus" role="status" aria-live="polite"></p><p id="cpSummary"></p>
+                    <details class="cp-original"><summary>Leggi il report esaminato</summary><pre id="cpReport"></pre></details>
+                    <div class="cp-table-wrap"><table><thead><tr><th>Area</th><th>Punto richiamato</th><th>Osservazione / motivazione</th><th>Riscontro da svolgere</th></tr></thead><tbody id="cpRows"></tbody></table></div>
+                </div>
+            </section>
+
             <!-- Fascicolo digitale: versioni e confronto in archivio locale, nessuna richiesta AI. -->
             <section id="fcRoot" class="eco-foldable fc-root no-print" aria-label="Fascicolo digitale e cronologia del caso" hidden>
               <div class="fc-head"><span class="fc-head-icon"><i class="fa-solid fa-folder-tree" aria-hidden="true"></i></span><div><h3>Fascicolo digitale e cronologia del caso</h3><p>Versioni successive · Fatti aggiunti · Ipotesi cambiate · Questioni aperte</p></div></div>
               <button type="button" class="eco-fold-toggle" data-eco-fold="fcRoot" aria-controls="fcRoot" aria-expanded="false"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Apri pannello</button>
               <div class="fc-body">
-                <p class="fc-info"><strong>Archivio locale indipendente dalla cronologia delle conversazioni.</strong> Le istantanee sono salvate in IndexedDB nel browser di questo dispositivo, senza API e senza caricare PDF. La funzione confronta <strong>differenze testuali</strong> e note inserite dall'operatore: non certifica fatti, prove o ricostruzioni giuridiche. Per non perdere i dati, esporta regolarmente il fascicolo.</p>
-                <div class="fc-bar"><button id="fcSave" type="button" class="fc-btn fc-primary"><i class="fa-solid fa-camera"></i> Salva versione</button><button id="fcExport" type="button" class="fc-btn"><i class="fa-solid fa-file-export"></i> Esporta backup JSON</button><button id="fcImport" type="button" class="fc-btn"><i class="fa-solid fa-file-import"></i> Importa backup JSON</button><input id="fcImportFile" type="file" accept=".json,application/json" hidden><button id="fcRestore" type="button" class="fc-btn fc-btn-gold"><i class="fa-solid fa-rotate-left"></i> Riprendi versione come nuovo caso</button></div>
+                <p class="fc-info"><strong>Archivio locale indipendente dalla cronologia delle conversazioni.</strong> Le istantanee sono salvate in IndexedDB nel browser di questo dispositivo, senza API e senza caricare PDF. La funzione confronta <strong>differenze testuali</strong> e note inserite dall'operatore: non certifica fatti, prove o ricostruzioni giuridiche. Per non perdere i dati, esporta regolarmente il fascicolo. Il <strong>backup protetto</strong> è cifrato con password; i dati conservati nel browser e il JSON non cifrato restano leggibili sul dispositivo.</p>
+                <div class="fc-bar"><button id="fcSave" type="button" class="fc-btn fc-primary"><i class="fa-solid fa-camera"></i> Salva versione</button><button id="fcExport" type="button" class="fc-btn"><i class="fa-solid fa-file-export"></i> Esporta backup protetto</button><button id="fcExportPlain" type="button" class="fc-btn">JSON non cifrato</button><button id="fcImport" type="button" class="fc-btn"><i class="fa-solid fa-file-import"></i> Importa backup</button><input id="fcImportFile" type="file" accept=".json,application/json" hidden><button id="fcRestore" type="button" class="fc-btn fc-btn-gold"><i class="fa-solid fa-rotate-left"></i> Riprendi versione come nuovo caso</button></div>
                 <p id="fcStatus" class="fc-status" role="status" aria-live="polite">Caricamento archivio locale…</p><p id="fcFactWarning" class="fc-warning" hidden><strong>Attenzione:</strong> il quadro fattuale è stato modificato dopo l’elaborazione. La modifica può essere salvata nel fascicolo, ma <strong>non aggiorna il report già prodotto</strong> né l’input precedente di Gemini. Per analizzare i nuovi elementi genera una nuova elaborazione o comunicali esplicitamente nel follow-up.</p>
                 <div id="fcWork" class="fc-editor fc-hidden" hidden>
                   <div class="fc-cols">
@@ -1142,7 +1302,10 @@
               </div>
             </section>
             <!-- Prosegui la conversazione -->
-            <div id="followUpBox" class="hidden mt-4 pt-4 border-t border-slate-200 no-print">
+            <div id="followUpBox" class="eco-foldable hidden mt-4 pt-4 border-t border-slate-200 no-print">
+                <h3 class="eco-follow-heading">Prosegui la conversazione</h3>
+                <button type="button" class="eco-fold-toggle" data-eco-fold="followUpBox" aria-controls="ecoFollowBody" aria-expanded="false">Apri pannello</button>
+                <div id="ecoFollowBody">
                 <p id="followHint" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2"></p>
                 <label for="followUpInput" class="block text-xs font-semibold text-slate-700 mb-1">
                     <i class="fa-solid fa-comments text-gdf-gold mr-1"></i>Prosegui questa conversazione:
@@ -1156,6 +1319,7 @@
                 </div>
                 <p id="followStatus" class="hidden text-xs text-gdf-blue font-semibold mt-2"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Elaborazione in corso...</p>
                 <p id="followError" class="hidden text-xs text-red-600 mt-2"></p>
+                </div>
             </div>
         </section>
 
@@ -1356,6 +1520,102 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         const HISTORY_MAX = 20;
         const DEFAULT_PROMPT = "Analizza dettagliatamente il quadro fattuale e/o il documento allegato fornendo il report completo.";
         let currentConv = null;
+        let factualCaseRevision = 0;
+
+        // Gestione casi: un unico punto di ingresso, dati montati solo per il caso attivo.
+        function caseFactsChanged(){
+            if(!currentConv)return false;
+            const original=String(currentConv.messages[0]?.text||'');
+            return document.getElementById('promptInput').value!==(original===DEFAULT_PROMPT?'':original);
+        }
+        function renderActiveCase() {
+            const label=document.getElementById('ecoActiveCaseTitle'),meta=document.getElementById('ecoActiveCaseMeta'),state=document.getElementById('ecoActiveCaseState');
+            if(!label||!meta||!state)return;
+            const draft=activeFactualDraftId?loadFactualDrafts().find(d=>d.id===activeFactualDraftId):null;
+            const facts=document.getElementById('promptInput').value;
+            const report=currentConv?.messages?.some(m=>m.role==='model');
+            const changed=report&&caseFactsChanged();
+            label.textContent=currentConv?.title||draft?.title||'Nuovo caso';
+            const id=currentConv?.id||draft?.id;
+            const stamp=currentConv?.ts||draft?.ts;
+            meta.textContent=id?'ID: '+String(id)+(stamp?' · '+new Date(stamp).toLocaleString('it-IT'):''):'Il caso viene salvato in bozza quando inserisci il quadro fattuale.';
+            state.textContent=ecoGeminiRequests.busy?'Elaborazione in corso':changed?'Fatti modificati · report da aggiornare':currentConv?.copiedFrom?'Copia indipendente · verifiche da rifare':currentConv?.resumedSnapshot?'Ripreso da una versione del fascicolo':report?'Analizzato':draft||facts.trim()?'In bozza':'Da iniziare';
+            const notice=document.getElementById('ecoCaseNotice');
+            notice.textContent=currentConv?.copiedFrom?'Report copiato dal caso '+currentConv.copiedFrom+'. Verificatore, Contraddittorio e riscontri normativi devono essere eseguiti su questo caso.':currentConv?.resumedSnapshot?'Ripresa dell’ultima versione salvata: la conversazione completa e le verifiche precedenti potrebbero non essere disponibili. Gli allegati binari vanno ricaricati.':'';
+            const short=document.getElementById('ecoActiveCaseShort');if(short){short.textContent='Caso: '+label.textContent;short.title=label.textContent;}
+            document.getElementById('ecoDuplicateCase').disabled=!currentConv&&!facts.trim();
+            window.ecoNomyComparison?.refresh();
+        }
+        function createCaseId(){return 'caso_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);}
+        function duplicateCurrentCase() {
+            if(factualWorkspaceBusy())return;
+            const facts=document.getElementById('promptInput').value;
+            const source=currentConv;
+            if(!source&&!facts.trim())return;
+            if(!saveActiveFactualDraft())return;
+            if(source){
+                const clone={id:createCaseId(),ts:new Date().toISOString(),title:('Copia di '+source.title).slice(0,110),copiedFrom:String(source.id),workspaceFacts:facts,pendingFollowUp:document.getElementById('followUpInput').value,messages:source.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',...(m._file?{_file:m._file}:{}),...(m._libraryContext?{_libraryContext:m._libraryContext,_libraryRefs:[...(m._libraryRefs||[])]}:{})}))};
+                // Salva la copia prima di cambiare il caso attivo: se manca spazio, resta sull'originale.
+                if(!storeCaseConversation(clone))return;
+                resetForNewFactualCase();currentConv=clone;
+                document.getElementById('promptInput').value=facts;
+                document.getElementById('followUpInput').value=clone.pendingFollowUp;
+                renderConversation();window.ecoNomyFascicolo?.onConversationSaved();
+            }else{
+                const draft={id:'quadro_'+createCaseId(),ts:new Date().toISOString(),updatedAt:new Date().toISOString(),title:('Copia di '+facts.trim().replace(/\s+/g,' ')).slice(0,84),text:facts,duplicatedFrom:activeFactualDraftId};
+                if(!persistFactualDrafts([draft,...loadFactualDrafts()]))return;
+                resetForNewFactualCase();activeFactualDraftId=draft.id;document.getElementById('promptInput').value=facts;renderFactualDrafts();renderActiveCase();
+            }
+            focusFactualPanel();
+        }
+        async function openCaseManager() {
+            const dialog=document.getElementById('ecoCaseDialog');
+            if(dialog.open)return;
+            if(!ecoGeminiRequests.busy&&!saveActiveFactualDraft())return;
+            dialog.showModal();document.getElementById('ecoCaseSearch').value='';
+            document.getElementById('ecoCaseList').replaceChildren();
+            document.getElementById('ecoCaseManagerStatus').textContent='Caricamento dei casi…';
+            try{
+                const recent=loadHistory(),drafts=loadFactualDrafts();let archive=[],archiveError=false;
+                try{archive=await window.ecoNomyFascicolo.listCases();}catch(_){archiveError=true;}
+                const seen=new Set(recent.map(c=>String(c.id)));
+                caseManagerItems=[...drafts.map(c=>({type:'draft',id:c.id,title:c.title,date:c.updatedAt||c.ts,kind:'Bozza · quadro fattuale'})),...recent.map(c=>({type:'recent',id:c.id,title:c.title,date:c.ts,kind:'Analisi recente · conversazione completa'})),...archive.filter(c=>!seen.has(String(c.caseId))&&c.versions?.length).map(c=>({type:'archive',id:c.caseId,title:c.title,date:c.updatedAt||c.createdAt,kind:'Fascicolo · ultima versione salvata'}))].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+                document.getElementById('ecoCaseManagerStatus').textContent=archiveError?'Archivio dei fascicoli non disponibile. Puoi riprendere bozze e analisi recenti.':'Scegli il caso da riprendere. I dati del caso attuale vengono salvati prima del cambio.';
+                renderCaseManagerList();
+            }catch(error){document.getElementById('ecoCaseManagerStatus').textContent='Impossibile leggere i casi: '+error.message;}
+        }
+        let caseManagerItems=[];
+        function renderCaseManagerList(){
+            const host=document.getElementById('ecoCaseList');host.replaceChildren();
+            const query=document.getElementById('ecoCaseSearch').value.trim().toLocaleLowerCase('it');
+            const items=caseManagerItems.filter(c=>(c.title+' '+c.id+' '+c.kind).toLocaleLowerCase('it').includes(query));
+            if(!items.length){const empty=document.createElement('p');empty.textContent='Nessun caso disponibile con questi criteri.';host.append(empty);return;}
+            for(const item of items){
+                const row=document.createElement('div');row.className='eco-case-row';
+                const info=document.createElement('div'),title=document.createElement('strong'),detail=document.createElement('small');
+                title.textContent=item.title||'Caso senza titolo';detail.textContent=item.kind+' · ID '+item.id+(item.date?' · '+new Date(item.date).toLocaleString('it-IT'):'');info.append(title,detail);
+                const button=document.createElement('button');button.type='button';button.textContent='Riprendi';button.addEventListener('click',async()=>{button.disabled=true;try{await resumeManagedCase(item);}catch(error){document.getElementById('ecoCaseManagerStatus').textContent='Ripresa non riuscita: '+error.message;}finally{button.disabled=false;}});
+                row.append(info,button);host.append(row);
+            }
+        }
+        async function resumeManagedCase(item){
+            if(factualWorkspaceBusy())return;
+            if(item.type==='draft'){if(openFactualDraft(item.id)!==false)document.getElementById('ecoCaseDialog').close();return;}
+            if(item.type==='recent'){if(openHistory(item.id)!==false)document.getElementById('ecoCaseDialog').close();return;}
+            if(!allowLeavingCurrentAttachment()||!saveActiveFactualDraft())return;
+            await window.ecoNomyFascicolo.flush();
+            const rec=await window.ecoNomyFascicolo.getCase(item.id);
+            if(!rec?.versions?.length)throw new Error('Il fascicolo non è più disponibile.');
+            const last=[...rec.versions].sort((a,b)=>a.number-b.number).at(-1);
+            const resumed={id:rec.caseId,ts:rec.createdAt||new Date().toISOString(),title:rec.title||'Fascicolo ripreso',resumedSnapshot:true,workspaceFacts:rec.workspace?.facts??last.factual,pendingFollowUp:rec.workspace?.pendingFollowUp||'',messages:[{role:'user',text:last.factual,fileName:(last.attachments||[]).join(', ')},...(last.report?[{role:'model',text:last.report}]:[])]};
+            if(!storeCaseConversation(resumed))return;
+            resetForNewFactualCase();currentConv=resumed;
+            document.getElementById('promptInput').value=resumed.workspaceFacts;
+            document.getElementById('followUpInput').value=resumed.pendingFollowUp;
+            if(last.report)renderConversation();else{renderHistory();window.ecoNomyFascicolo.refresh();}
+            document.getElementById('ecoCaseDialog').close();focusFactualPanel();renderActiveCase();
+        }
+        window.ecoNomyCases={refresh:renderActiveCase,open:openCaseManager,duplicate:duplicateCurrentCase};
 
         function escapeHtml(str) {
             return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1389,6 +1649,11 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             clearTimeout(factualAutosaveTimer);
             const input = document.getElementById('promptInput');
             const text = input.value;
+            if(currentConv){
+                currentConv.workspaceFacts=text;
+                currentConv.pendingFollowUp=document.getElementById('followUpInput').value;
+                return saveConversation();
+            }
             if (!text.trim()) return true;
             const original = currentConv && currentConv.messages && currentConv.messages[0] && currentConv.messages[0].text;
             // Una conversazione gia' archiviata non richiede una seconda copia.
@@ -1398,11 +1663,12 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             const previous = items.find(item => item.id === id);
             const heading = text.trim().replace(/\s+/g, ' ').slice(0, 84);
             const draft = { id, ts: previous ? previous.ts : new Date().toISOString(),
-                updatedAt: new Date().toISOString(), title: heading, text };
+                updatedAt: new Date().toISOString(), title: previous?.duplicatedFrom ? previous.title : heading, text, ...(previous?.duplicatedFrom?{duplicatedFrom:previous.duplicatedFrom}:{}) };
             const next = [draft, ...items.filter(item => item.id !== id)];
             if (!persistFactualDrafts(next)) return false;
             activeFactualDraftId = id;
             renderFactualDrafts();
+            renderActiveCase();
             return true;
         }
 
@@ -1438,6 +1704,8 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function resetForNewFactualCase() {
+            factualCaseRevision++;
+            ecoGeminiRequests.cancel();
             window.ecoNomyInvestigative?.reset();
             window.ecoNomyBiblioteca?.clearSelected();
             currentConv = null;
@@ -1452,13 +1720,20 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             outputArea.classList.remove('hidden');
             renderHistory();
             renderFactualDrafts();
-            window.ecoNomyFascicolo?.refresh();
+            window.ecoNomyVerifier?.clearPending?.();
+            window.ecoNomyContraddittorio?.clearPending?.();
+            window.ecoNomyVerifier?.refresh();
+            window.ecoNomyContraddittorio?.refresh();
+            window.ecoNomyNormativa?.refresh();
+            window.ecoNomyFascicolo?.reset();
+            window.ecoNomyPanels?.open('outputArea');
+            window.ecoNomyModules?.show('input');
             window.ecoNomyProfessionalReport?.refresh();
         }
 
         function factualWorkspaceBusy() {
-            if (document.getElementById('submitBtn').disabled || document.getElementById('followBtn').disabled) {
-                alert('Attendi la conclusione dell’analisi in corso prima di aprire un nuovo quadro fattuale.');
+            if (ecoGeminiRequests.busy || document.getElementById('submitBtn').disabled || document.getElementById('followBtn').disabled) {
+                alert('Interrompi le elaborazioni in corso oppure attendi la conclusione prima di cambiare caso.');
                 return true;
             }
             return false;
@@ -1471,30 +1746,33 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function startNewFactualCase() {
-            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return;
-            if (!saveActiveFactualDraft()) return;
+            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return false;
+            if (!saveActiveFactualDraft()) return false;
             resetForNewFactualCase();
             focusFactualPanel();
         }
 
         function openFactualDraft(id) {
-            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return;
-            if (!saveActiveFactualDraft()) return;
+            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return false;
+            if (!saveActiveFactualDraft()) return false;
             const draft = loadFactualDrafts().find(d => d.id === id);
-            if (!draft) { renderFactualDrafts(); return; }
+            if (!draft) { renderFactualDrafts(); return false; }
             resetForNewFactualCase();
             activeFactualDraftId = draft.id;
             document.getElementById('promptInput').value = draft.text;
             renderFactualDrafts();
+            renderActiveCase();
             focusFactualPanel();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('promptInput').addEventListener('input', () => {
                 clearTimeout(factualAutosaveTimer);
+                renderActiveCase();
                 factualAutosaveTimer = setTimeout(saveActiveFactualDraft, 450);
             });
-            renderFactualDrafts();
+            document.getElementById('followUpInput').addEventListener('input',()=>{clearTimeout(factualAutosaveTimer);factualAutosaveTimer=setTimeout(saveActiveFactualDraft,450);});
+            renderFactualDrafts();renderActiveCase();
         });
 
         function loadHistory() {
@@ -1515,30 +1793,23 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function persistHistory(list) {
-            // Se lo spazio è pieno, elimina le più vecchie finché il salvataggio riesce
-            while (list.length) {
-                try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); return; }
-                catch { list.pop(); }
-            }
-            try { localStorage.removeItem(HISTORY_KEY); } catch {}
+            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); return true; }
+            catch (_) { alert('Salvataggio del caso non riuscito: spazio del browser insufficiente o archiviazione bloccata. Il caso attivo resta aperto; esporta un backup prima di cambiarlo.'); return false; }
         }
-
+        function storeCaseConversation(conv) {
+            const stored={id:conv.id,ts:conv.ts,title:conv.title,workspaceFacts:conv.workspaceFacts??document.getElementById('promptInput').value,pendingFollowUp:conv.pendingFollowUp||'',
+                ...(conv.copiedFrom?{copiedFrom:conv.copiedFrom}:{}),...(conv.resumedSnapshot?{resumedSnapshot:true}:{}),
+                ...(conv.verification?{verification:conv.verification}:{}),...(conv.contradictory?{contradictory:conv.contradictory}:{}),...(conv.normativeAudit?{normativeAudit:conv.normativeAudit}:{}),
+                messages:conv.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||'',...(m._libraryContext?{_libraryContext:m._libraryContext,_libraryRefs:m._libraryRefs||[]}:{})}))};
+            const list=loadHistory().filter(i=>String(i.id)!==String(stored.id));list.unshift(stored);
+            return persistHistory(list.slice(0,HISTORY_MAX));
+        }
         function saveConversation() {
-            if (!currentConv) return;
-            const stored = {
-                id: currentConv.id,
-                ts: currentConv.ts,
-                title: currentConv.title,
-                ...(currentConv.verification ? {verification: currentConv.verification} : {}),
-                ...(currentConv.contradictory ? {contradictory: currentConv.contradictory} : {}),
-                ...(currentConv.normativeAudit ? {normativeAudit: currentConv.normativeAudit} : {}),
-                messages: currentConv.messages.map(m => ({ role: m.role, text: m.text, fileName: m.fileName || '', ...(m._libraryContext ? { _libraryContext: m._libraryContext, _libraryRefs: m._libraryRefs || [] } : {}) }))
-            };
-            const list = loadHistory().filter(i => i.id !== stored.id);
-            list.unshift(stored);
-            persistHistory(list.slice(0, HISTORY_MAX));
-            renderHistory();
-            window.ecoNomyFascicolo?.onConversationSaved();
+            if(!currentConv)return true;
+            currentConv.workspaceFacts=document.getElementById('promptInput').value;
+            currentConv.pendingFollowUp=document.getElementById('followUpInput').value;
+            if(!storeCaseConversation(currentConv))return false;
+            renderHistory();window.ecoNomyFascicolo?.onConversationSaved();return true;
         }
 
         // Nota sul limite: discreta fino a 14 conversazioni, alert dalla 15esima in poi
@@ -1547,7 +1818,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
             if (!note) return;
             if (count >= HISTORY_MAX) {
                 note.innerHTML = `<div class="bg-red-50 border border-red-300 text-red-800 rounded px-2 py-1.5 text-[11px]">
-                    <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>Archivio pieno (${count}/${HISTORY_MAX}): la prossima analisi cancellerà automaticamente la conversazione più vecchia.</strong></div>`;
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>Elenco recenti pieno (${count}/${HISTORY_MAX}): la prossima analisi cancellerà automaticamente la conversazione più vecchia.</strong></div>`;
             } else if (count >= 15) {
                 note.innerHTML = `<div class="bg-amber-50 border border-amber-300 text-amber-800 rounded px-2 py-1.5 text-[11px]">
                     <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>Attenzione: hai ${count} conversazioni su ${HISTORY_MAX}. Alla ventunesima, la più vecchia si cancella automaticamente.</strong></div>`;
@@ -1557,6 +1828,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function renderHistory() {
+            renderActiveCase();
             renderFactualDrafts();
             const box = document.getElementById('historyList');
             const list = loadHistory();
@@ -1565,21 +1837,14 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
                 box.innerHTML = '<p class="text-xs text-slate-400 italic">Nessuna conversazione salvata.</p>';
                 return;
             }
-            box.innerHTML = list.map(item => {
-                const d = new Date(item.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
-                const turns = item.messages.filter(m => m.role === 'user').length;
-                const active = currentConv && currentConv.id === item.id ? ' ring-2 ring-gdf-gold' : '';
-                return `
-                <div class="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded px-2 py-1.5${active}">
-                    <button onclick="openHistory(${item.id})" class="flex-1 text-left min-w-0">
-                        <span class="block text-xs font-semibold text-slate-700 truncate">${escapeHtml(item.title)}</span>
-                        <span class="block text-[10px] text-slate-400">${d} &bull; ${turns} ${turns === 1 ? 'messaggio' : 'messaggi'}</span>
-                    </button>
-                    <button onclick="deleteHistory(${item.id})" title="Elimina" class="text-slate-400 hover:text-red-600 px-1">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>`;
-            }).join('');
+            box.replaceChildren();
+            for(const item of list){
+                const row=document.createElement('div');row.className='eco-recent-case-row';
+                if(currentConv&&String(currentConv.id)===String(item.id))row.classList.add('is-active');
+                const open=document.createElement('button');open.type='button';open.className='eco-recent-case-open';open.addEventListener('click',()=>openHistory(item.id));
+                const title=document.createElement('strong'),detail=document.createElement('small');title.textContent=item.title||'Caso senza titolo';detail.textContent=new Date(item.ts).toLocaleString('it-IT')+' · ID '+String(item.id);open.append(title,detail);
+                const del=document.createElement('button');del.type='button';del.textContent='×';del.setAttribute('aria-label','Elimina dalle recenti');del.addEventListener('click',()=>deleteHistory(item.id));row.append(open,del);box.append(row);
+            }
         }
 
         function renderConversation() {
@@ -1592,9 +1857,10 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
                         <div style="white-space:pre-wrap">${escapeHtml(m.text)}</div>${m._libraryRefs?.length ? `<p class="mt-2 text-[11px] font-semibold text-gdf-blue"><i class="fa-solid fa-book-open-reader"></i> Fonti locali approvate: ${m._libraryRefs.map(ref => escapeHtml(ref)).join(" · ")}</p>` : ""}
                     </div>`;
                 }
-                return `<div class="mb-2">${marked.parse(m.text)}</div>`;
+                return `<div class="mb-2">${safeRenderMarkdown(m.text)}</div>`;
             }).join('');
             out.classList.remove('hidden');
+            window.ecoNomyPanels?.open('outputArea');
 
             // Avviso se ci sono allegati non più disponibili in memoria
             const hint = document.getElementById('followHint');
@@ -1615,39 +1881,51 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         function openHistory(id) {
-            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return;
-            if (!saveActiveFactualDraft()) return;
+            if (factualWorkspaceBusy() || !allowLeavingCurrentAttachment()) return false;
+            if (!saveActiveFactualDraft()) return false;
             const item = loadHistory().find(i => i.id === id);
-            if (!item) return;
+            if (!item) return false;
+            resetForNewFactualCase();
             clearTimeout(factualAutosaveTimer);
             activeFactualDraftId = null;
             removeFile();
             window.ecoNomyBiblioteca?.clearSelected();
+            factualCaseRevision++;
             currentConv = JSON.parse(JSON.stringify(item));
             document.getElementById('followError').classList.add('hidden');
-            document.getElementById('promptInput').value = currentConv.messages[0]?.text === DEFAULT_PROMPT ? '' : (currentConv.messages[0]?.text || '');
+            document.getElementById('promptInput').value = currentConv.workspaceFacts ?? (currentConv.messages[0]?.text === DEFAULT_PROMPT ? '' : (currentConv.messages[0]?.text || ''));
+            document.getElementById('followUpInput').value = currentConv.pendingFollowUp || '';
             renderConversation();
+            focusFactualPanel();
         }
 
         function deleteHistory(id) {
+            if (factualWorkspaceBusy()) return;
             persistHistory(loadHistory().filter(i => i.id !== id));
             if (currentConv && currentConv.id === id) {
+                factualCaseRevision++;
                 currentConv = null;
+                document.getElementById('outputArea').innerHTML = emptyReportMarkup;
                 document.getElementById('followUpBox').classList.add('hidden');
                 window.ecoNomyVerifier?.refresh();
                 window.ecoNomyContraddittorio?.refresh();
-            window.ecoNomyNormativa?.refresh();
+                window.ecoNomyNormativa?.refresh();
+                window.ecoNomyProfessionalReport?.refresh();
             }
             renderHistory();
             window.ecoNomyFascicolo?.refresh();
         }
 
         function clearHistory() {
+            if (factualWorkspaceBusy()) return;
             if (!confirm('Eliminare tutte le analisi e le bozze? I fascicoli digitali conservati nell’archivio separato NON saranno cancellati: puoi eliminarli individualmente dal pannello Fascicolo.')) return;
             clearTimeout(factualAutosaveTimer);
             try { localStorage.removeItem(HISTORY_KEY); localStorage.removeItem(FACTUAL_DRAFTS_KEY); } catch {}
             activeFactualDraftId = null;
+            factualCaseRevision++;
             currentConv = null;
+            document.getElementById('outputArea').innerHTML = emptyReportMarkup;
+            window.ecoNomyProfessionalReport?.refresh();
             document.getElementById('followUpBox').classList.add('hidden');
             window.ecoNomyVerifier?.refresh();
             window.ecoNomyContraddittorio?.refresh();
@@ -1657,20 +1935,23 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const savedKey = localStorage.getItem('gdf_gemini_api_key');
-            if (savedKey) {
-                document.getElementById('apiKeyInput').value = savedKey;
-            }
+            // Migrazione della sola chiave: non modificare casi o cronologia.
+            try {
+                const legacy = localStorage.getItem('gdf_gemini_api_key');
+                if (legacy) sessionStorage.setItem('gdf_gemini_api_key', legacy);
+                localStorage.removeItem('gdf_gemini_api_key');
+                document.getElementById('apiKeyInput').value = sessionStorage.getItem('gdf_gemini_api_key') || '';
+            } catch (_) { try { localStorage.removeItem('gdf_gemini_api_key'); } catch (_) {} }
             renderHistory();
         });
 
         function saveApiKey() {
             const key = document.getElementById('apiKeyInput').value.trim();
             if (key) {
-                localStorage.setItem('gdf_gemini_api_key', key);
-                alert('API Key salvata con successo nel browser!');
+                try { sessionStorage.setItem('gdf_gemini_api_key', key); } catch (_) { alert('Salvataggio della sessione non disponibile: la chiave resta nel campo finché la pagina è aperta.'); return; }
+                alert('API Key salvata solo per questa sessione del browser.');
             } else {
-                localStorage.removeItem('gdf_gemini_api_key');
+                try { sessionStorage.removeItem('gdf_gemini_api_key'); localStorage.removeItem('gdf_gemini_api_key'); } catch (_) {}
                 alert('API Key rimossa.');
             }
         }
@@ -1693,7 +1974,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
                     name: file.name
                 };
 
-                document.getElementById('fileName').innerHTML = `<i class="fa-solid fa-paperclip mr-1"></i> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                document.getElementById('fileName').innerHTML = `<i class="fa-solid fa-paperclip mr-1"></i> ${escapeHtml(file.name)} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
                 document.getElementById('fileInfo').classList.remove('hidden');
             };
 
@@ -1738,7 +2019,7 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
                         <p style="margin:0;white-space:pre-wrap;">${escapeHtml(m.text)}</p>
                     </div>`;
                 }
-                return marked.parse(m.text);
+                return safeRenderMarkdown(m.text);
             }).join('\n');
 
             const data = new Date().toLocaleString('it-IT');
@@ -1793,11 +2074,13 @@ ${body}
 
         // Chiamata a Gemini: restituisce il testo oppure lancia un errore leggibile
         async function callGemini(contents, options = {}) {
-            const apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gdf_gemini_api_key');
+            const apiKey = getGeminiApiKey();
             const model = document.getElementById('modelSelect').value;
             if (!apiKey) throw new Error('Inserisci la tua Google Gemini API Key per proseguire!');
 
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const controller = ecoGeminiRequests.begin();
+            try {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
             const payload = {
                 systemInstruction: { parts: [{ text: options.systemInstruction || SYSTEM_INSTRUCTION }] },
                 contents: contents
@@ -1807,7 +2090,8 @@ ${body}
 
             const callApi = (pl) => fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                signal: controller.signal,
                 body: JSON.stringify(pl)
             });
 
@@ -1819,6 +2103,7 @@ ${body}
 
             let response = await callApi(payload);
             let data = await readJson(response);
+            controller.signal.throwIfAborted();
 
             // Se la ricerca web non è disponibile (quota / tool non supportato), riprova senza
             if (payload.tools && !response.ok && (response.status === 429 || response.status === 400)) {
@@ -1826,6 +2111,7 @@ ${body}
                 delete payload.tools;
                 response = await callApi(payload);
                 data = await readJson(response);
+                controller.signal.throwIfAborted();
             }
 
             if (!response.ok) {
@@ -1843,12 +2129,18 @@ ${body}
                 const reason = data.promptFeedback?.blockReason || candidate?.finishReason || 'sconosciuto';
                 throw new Error('Nessun risultato generato dal modello (motivo: ' + reason + '). Verifica l\'input.');
             }
+            controller.signal.throwIfAborted();
             return text;
+            } catch (error) {
+                if (controller.signal.aborted) throw new DOMException('Elaborazione interrotta. Puoi riprovare senza riscrivere il testo.', 'AbortError');
+                throw error;
+            } finally { ecoGeminiRequests.end(controller); }
         }
 
         // Nuova analisi (avvia una nuova conversazione)
         async function generateReport() {
-            const apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gdf_gemini_api_key');
+            if (ecoGeminiRequests.busy || document.getElementById('submitBtn').disabled) return;
+            const apiKey = getGeminiApiKey();
             const promptText = document.getElementById('promptInput').value.trim();
 
             if (!apiKey) {
@@ -1866,7 +2158,10 @@ ${body}
                 : { text: '', refs: [] };
             if (approvedSources === null) return; // Annullato: nessuna chiamata API.
 
+            const previousConv = currentConv;
+            const startedRevision = factualCaseRevision;
             const outputArea = document.getElementById('outputArea');
+            const previousMarkup = outputArea.innerHTML;
             const loader = document.getElementById('loader');
             const submitBtn = document.getElementById('submitBtn');
 
@@ -1878,9 +2173,9 @@ ${body}
 
             const firstLine = (promptText || ('Allegato: ' + selectedFileData.name)).replace(/\s+/g, ' ').trim();
             const conv = {
-                id: Date.now(),
-                ts: new Date().toISOString(),
-                title: firstLine.slice(0, 80),
+                id: previousConv?.id || Date.now(),
+                ts: previousConv?.ts || new Date().toISOString(),
+                title: previousConv?.title || firstLine.slice(0, 80),
                 messages: [{
                     role: 'user',
                     text: promptText || DEFAULT_PROMPT,
@@ -1893,6 +2188,7 @@ ${body}
 
             try {
                 const reply = await callGemini(buildContents(conv));
+                if (factualCaseRevision !== startedRevision) return;
                 conv.messages.push({ role: 'model', text: reply });
                 currentConv = conv;
                 saveConversation();
@@ -1901,6 +2197,16 @@ ${body}
                 activeFactualDraftId = null;
                 renderConversation();
             } catch (error) {
+                if (factualCaseRevision !== startedRevision) return;
+                if (error.name === 'AbortError') {
+                    currentConv = previousConv;
+                    outputArea.innerHTML = previousMarkup;
+                    if (currentConv) renderConversation();
+                    window.ecoNomyVerifier?.refresh();
+                    window.ecoNomyContraddittorio?.refresh();
+                    window.ecoNomyNormativa?.refresh();
+                    document.getElementById('ecoRequestFeedback').textContent = error.message;
+                } else {
                 console.error(error);
                 currentConv = null;
                 window.ecoNomyVerifier?.refresh();
@@ -1912,17 +2218,20 @@ ${body}
                         <p class="text-sm">${escapeHtml(error.message)}</p>
                     </div>
                 `;
+                }
             } finally {
                 loader.classList.add('hidden');
                 loader.classList.remove('flex');
                 outputArea.classList.remove('hidden');
+                window.ecoNomyPanels?.open('outputArea');
                 submitBtn.disabled = false;
             }
         }
 
         // Prosegue la conversazione corrente
         async function sendFollowUp() {
-            if (!currentConv) return;
+            if (!currentConv || document.getElementById('followBtn').disabled) return;
+            const targetConv = currentConv;
             const input = document.getElementById('followUpInput');
             const text = input.value.trim();
             const errBox = document.getElementById('followError');
@@ -1948,17 +2257,19 @@ ${body}
 
             try {
                 const reply = await callGemini(buildContents(currentConv));
-                currentConv.messages.push({ role: 'model', text: reply });
+                if (currentConv !== targetConv) return;
+                targetConv.messages.push({ role: 'model', text: reply });
                 input.value = '';
                 saveConversation();
                 renderConversation();
                 // Porta in vista l'inizio dell'ultima risposta
                 const out = document.getElementById('outputArea');
                 const last = out.lastElementChild;
-                if (last) last.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (last && document.getElementById('workspace').dataset.view !== 'input' && document.getElementById('workspace').dataset.view !== 'library') last.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (error) {
                 console.error(error);
-                currentConv.messages.pop(); // annulla il messaggio non andato a buon fine
+                targetConv.messages.pop(); // annulla il messaggio non andato a buon fine
+                if(currentConv===targetConv){targetConv.workspaceFacts=document.getElementById('promptInput').value;targetConv.pendingFollowUp=input.value;storeCaseConversation(targetConv);}
                 errBox.textContent = 'Errore: ' + error.message;
                 errBox.classList.remove('hidden');
             } finally {
@@ -1985,48 +2296,44 @@ ${body}
         };
         const FIREBASE_VERSION = '10.14.1';
         // App Check con Fraud Defense (reCAPTCHA Enterprise). La chiave del sito e' pubblica, non e' un segreto.
-        // Lasciala vuota ('') per disattivare App Check.
+        // La condivisione richiede App Check; le altre funzioni restano locali o usano Gemini.
         const APPCHECK_SITE_KEY = '6LcGNectAAAAAEAG2nTbLmK7uS-7jC2hiAkT0Gum';
 
         /* ------------------------------------------------------------------
            REGOLE DI SICUREZZA FIRESTORE
            Da incollare in: Firebase Console -> Firestore Database -> Regole -> Pubblica
-           (stesso contenuto del file firebase/firestore.rules)
+           Queste regole sono raccomandate; modificarle qui NON le pubblica su Firebase.
 
            rules_version = '2';
            service cloud.firestore {
              match /databases/{database}/documents {
-
-               // Il documento ha come nome un hash derivato dal codice: si legge
-               // solo conoscendo il codice. Non e' possibile elencare i documenti.
                match /shares/{shareId} {
-
-                 allow get: if request.auth != null
-                            && request.time < resource.data.expiresAt;
-
+                 function validId() { return shareId.matches('^[a-f0-9]{64}$'); }
+                 function validDocument() {
+                   let d = request.resource.data;
+                   let fields = ['owner', 'iv', 'ct', 'createdAt', 'expiresAt'];
+                   return d.keys().hasAll(fields) && d.keys().hasOnly(fields)
+                     && d.owner is string && d.owner == request.auth.uid
+                     && d.iv is string && d.iv.size() == 16 && d.iv.matches('^[A-Za-z0-9+/]{16}$')
+                     && d.ct is string && d.ct.size() >= 24 && d.ct.size() < 900000
+                     && d.ct.matches('^[A-Za-z0-9+/]+={0,2}$')
+                     && d.createdAt is timestamp && d.createdAt == request.time
+                     && d.expiresAt is timestamp && d.expiresAt > request.time
+                     && d.expiresAt <= request.time + duration.value(8, 'd');
+                 }
+                 allow get: if request.auth != null && validId()
+                   && resource.data.expiresAt is timestamp && request.time < resource.data.expiresAt;
                  allow list: if false;
-
-                 allow create: if request.auth != null
-                               && request.resource.data.keys().hasOnly(['owner', 'iv', 'ct', 'createdAt', 'expiresAt'])
-                               && request.resource.data.owner == request.auth.uid
-                               && request.resource.data.iv is string
-                               && request.resource.data.ct is string
-                               && request.resource.data.ct.size() < 900000
-                               && request.resource.data.createdAt == request.time
-                               && request.resource.data.expiresAt is timestamp
-                               && request.resource.data.expiresAt > request.time
-                               && request.resource.data.expiresAt <= request.time + duration.value(8, 'd');
-
+                 allow create: if request.auth != null && validId() && validDocument();
                  allow update: if false;
-
-                 // Solo chi ha creato la condivisione puo' revocarla
-                 allow delete: if request.auth != null
-                               && resource.data.owner == request.auth.uid;
+                 allow delete: if request.auth != null && validId() && resource.data.owner == request.auth.uid;
                }
+               // Le altre raccolte restano inaccessibili, salvo regole aggiunte esplicitamente.
              }
            }
 
            Altre impostazioni su Firebase (vedi README.md):
+           - App Check -> Cloud Firestore: verifica metriche e attiva applicazione obbligatoria
            - Authentication -> Metodo di accesso -> Anonimo: ATTIVO
            - Firestore -> TTL: raccolta "shares", campo "expiresAt"
            - Authentication -> Impostazioni -> Domini autorizzati: aggiungi USER.github.io
@@ -2035,6 +2342,10 @@ ${body}
         const SHARES_KEY = 'gdf_condivisioni';
         const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 caratteri, senza 0/O/1/I
         let fbCache = null;
+        let fbInitPromise = null;
+        let fbAppCheck = null;
+        let sharesFallback = null;
+        const LOCAL_APPCHECK_DEBUG = false; // Abilitare solo esplicitamente sul proprio localhost.
 
         // ---- CRYPTO START ----
         function generateCode() {
@@ -2067,7 +2378,7 @@ ${body}
         // Dal codice si ricavano l'identificativo del documento e la chiave di cifratura.
         // Il codice NON viene mai inviato a Firebase.
         async function deriveFromCode(code) {
-            if (!crypto || !crypto.subtle) throw new Error('Cifratura non disponibile: apri la pagina da http://localhost oppure da file locale.');
+            if (!window.crypto?.subtle) throw new Error('Cifratura non disponibile: apri il sito tramite HTTPS o localhost.');
             const enc = new TextEncoder();
             const base = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveBits', 'deriveKey']);
             const idBits = await crypto.subtle.deriveBits(
@@ -2086,9 +2397,22 @@ ${body}
             return { iv: toB64(iv), ct: toB64(ct) };
         }
 
+        function validateSharedPayload(payload){
+            if(!payload||typeof payload!=='object'||Array.isArray(payload)||typeof payload.title!=='string'||payload.title.length>160||!Array.isArray(payload.messages)||!payload.messages.length||payload.messages.length>200)throw new Error('Formato della conversazione condivisa non valido.');
+            if(typeof payload.ts!=='string'||payload.ts.length>100||isNaN(Date.parse(payload.ts)))throw new Error('Data della conversazione condivisa non valida.');
+            const messages=payload.messages.map(m=>{if(!m||!['user','model'].includes(m.role)||typeof m.text!=='string'||m.text.length>250000||(m.fileName!=null&&(typeof m.fileName!=='string'||m.fileName.length>1024)))throw new Error('Messaggi della conversazione non validi o troppo grandi.');return {role:m.role,text:m.text,fileName:m.fileName||''};});
+            if(messages[0].role!=='user')throw new Error('La conversazione deve iniziare con un messaggio operatore.');
+            return {title:payload.title,ts:payload.ts,messages};
+        }
+        function validateSharedEnvelope(data){
+            if(!data||typeof data.iv!=='string'||!/^[A-Za-z0-9+/]{16}$/.test(data.iv)||typeof data.ct!=='string'||data.ct.length<24||data.ct.length>=900000||data.ct.length%4||!/^[A-Za-z0-9+/]+={0,2}$/.test(data.ct))throw new Error('Dati cifrati non validi o troppo grandi.');
+            if(typeof data.owner!=='string'||!data.owner||typeof data.expiresAt?.toMillis!=='function'||!Number.isFinite(data.expiresAt.toMillis())||data.expiresAt.toMillis()<=Date.now())throw new Error('Condivisione scaduta o non valida.');
+            return data;
+        }
         async function decryptPayload(key, ivB64, ctB64) {
+            if(typeof ivB64!=='string'||!/^[A-Za-z0-9+/]{16}$/.test(ivB64)||typeof ctB64!=='string'||ctB64.length>=900000||ctB64.length%4||!/^[A-Za-z0-9+/]+={0,2}$/.test(ctB64))throw new Error('Dati cifrati non validi.');
             const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(ivB64) }, key, fromB64(ctB64));
-            return JSON.parse(new TextDecoder().decode(pt));
+            return validateSharedPayload(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(pt)));
         }
         // ---- CRYPTO END ----
 
@@ -2097,36 +2421,21 @@ ${body}
         }
 
         async function getFirebase() {
-            if (fbCache) return fbCache;
-            const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
-            const [appM, authM, fsM, acM] = await Promise.all([
-                import(base + 'firebase-app.js'),
-                import(base + 'firebase-auth.js'),
-                import(base + 'firebase-firestore.js'),
-                import(base + 'firebase-app-check.js')
-            ]);
-            // In locale (localhost) App Check usa un debug token: compare nella console del browser
-            // e va registrato in Firebase > App Check > App > Gestisci token di debug.
-            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-                self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-            }
-            const app = appM.initializeApp(FIREBASE_CONFIG);
-            if (APPCHECK_SITE_KEY) {
-                try {
-                    // Va inizializzato PRIMA di Auth e Firestore
-                    acM.initializeAppCheck(app, {
-                        provider: new acM.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY),
-                        isTokenAutoRefreshEnabled: true
-                    });
-                } catch (e) {
-                    console.warn('App Check non inizializzato:', e);
-                }
-            }
-            const auth = authM.getAuth(app);
-            await auth.authStateReady();
-            if (!auth.currentUser) await authM.signInAnonymously(auth);
-            fbCache = { db: fsM.getFirestore(app), fs: fsM, uid: auth.currentUser.uid };
-            return fbCache;
+            if(fbCache)return fbCache;
+            if(fbInitPromise)return fbInitPromise;
+            fbInitPromise=(async()=>{
+                if(!APPCHECK_SITE_KEY)throw new Error('App Check non configurato: la condivisione resta disabilitata.');
+                const base=`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+                const [appM,authM,fsM,acM]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js'),import(base+'firebase-app-check.js')]);
+                if(LOCAL_APPCHECK_DEBUG&&(location.hostname==='localhost'||location.hostname==='127.0.0.1'))self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
+                const app=appM.getApps().length?appM.getApp():appM.initializeApp(FIREBASE_CONFIG);
+                if(app.options?.projectId&&app.options.projectId!==FIREBASE_CONFIG.projectId)throw new Error('Configurazione Firebase inattesa: condivisione bloccata.');
+                const appCheck=fbAppCheck||(fbAppCheck=acM.initializeAppCheck(app,{provider:new acM.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY),isTokenAutoRefreshEnabled:true}));
+                try{await acM.getToken(appCheck,false);}catch(_){throw new Error('Verifica App Check non riuscita. Controlla dominio autorizzato e configurazione reCAPTCHA Enterprise.');}
+                const auth=authM.getAuth(app);await auth.authStateReady();if(!auth.currentUser)await authM.signInAnonymously(auth);
+                return {db:fsM.getFirestore(app),fs:fsM,uid:auth.currentUser.uid};
+            })();
+            try{fbCache=await fbInitPromise;return fbCache;}finally{fbInitPromise=null;}
         }
 
         function friendlyFirebaseError(e) {
@@ -2138,15 +2447,19 @@ ${body}
         }
 
         function loadShares() {
-            let o;
-            try { o = JSON.parse(localStorage.getItem(SHARES_KEY)) || {}; } catch { o = {}; }
-            const now = Date.now();
-            let changed = false;
-            for (const k in o) { if (o[k].expiresAt <= now) { delete o[k]; changed = true; } }
-            if (changed) saveShares(o);
-            return o;
+            let raw;try{raw=sharesFallback||JSON.parse(localStorage.getItem(SHARES_KEY)||'{}');}catch(_){raw=sharesFallback||{};}
+            const safe=Object.create(null);
+            if(!raw||typeof raw!=='object'||Array.isArray(raw))return safe;
+            for(const [caseId,info] of Object.entries(raw)){
+                if(!info||typeof info.code!=='string'||normalizeCode(info.code).length!==12||![...normalizeCode(info.code)].every(c=>CODE_ALPHABET.includes(c))||typeof info.id!=='string'||!/^[a-f0-9]{64}$/.test(info.id)||!Number.isFinite(info.expiresAt)||info.expiresAt<=Date.now())continue;
+                safe[caseId]={code:info.code,id:info.id,expiresAt:info.expiresAt};
+            }
+            return safe;
         }
-        function saveShares(o) { try { localStorage.setItem(SHARES_KEY, JSON.stringify(o)); } catch {} }
+        function saveShares(o) {
+            try{localStorage.setItem(SHARES_KEY,JSON.stringify(o));sharesFallback=null;}
+            catch(_){sharesFallback=o;alert('La condivisione è stata aggiornata, ma il browser non ha salvato il codice. Copialo prima di chiudere la pagina: dopo la chiusura la gestione locale potrebbe non essere disponibile.');}
+        }
 
         function closeModals() {
             ['shareModal', 'codeModal'].forEach(id => {
@@ -2180,7 +2493,7 @@ ${body}
             if (info) {
                 const scad = new Date(info.expiresAt).toLocaleString('it-IT');
                 body.innerHTML = `
-                    <p class="text-xs text-slate-600 mb-2">Conversazione condivisa. Invia questo codice al collega:</p>
+                    <p class="text-xs text-slate-600 mb-2">Conversazione condivisa. Chiunque abbia questo codice può leggere la copia fino alla scadenza o alla revoca:</p>
                     <div class="bg-slate-50 border border-slate-300 rounded-lg p-3 text-center font-mono text-2xl tracking-widest text-gdf-blue select-all">${escapeHtml(info.code)}</div>
                     <p class="text-[11px] text-slate-500 mt-2">Scade il <strong>${scad}</strong>. Dopo la scadenza il codice non funziona più.</p>
                     <p class="text-[11px] text-slate-500 mt-1">La copia condivisa è un'istantanea: se prosegui la conversazione, per aggiornare il collega revoca e genera un nuovo codice.</p>
@@ -2206,19 +2519,19 @@ ${body}
 
         async function doShare() {
             const btn = document.getElementById('shareBtn');
-            const hours = parseInt(document.getElementById('shareDuration').value, 10) || 72;
+            if(!currentConv||!btn||btn.disabled)return;
+            const sharedCaseId=currentConv.id;
+            const source={title:currentConv.title,ts:currentConv.ts,messages:currentConv.messages.map(m=>({role:m.role,text:m.text,fileName:m.fileName||''}))};
+            const hours=Number(document.getElementById('shareDuration').value);
+            if(![24,72,168].includes(hours))return;
             btn.disabled = true;
             btn.textContent = 'Cifratura e invio in corso...';
             try {
-                const payload = {
-                    title: currentConv.title,
-                    ts: currentConv.ts,
-                    messages: currentConv.messages.map(m => ({ role: m.role, text: m.text, fileName: m.fileName || '' }))
-                };
+                const payload = validateSharedPayload(source);
                 const code = generateCode();
                 const { id, key } = await deriveFromCode(code);
                 const { iv, ct } = await encryptPayload(key, payload);
-                if (ct.length > 900000) throw new Error('La conversazione è troppo lunga per essere condivisa.');
+                if (ct.length >= 900000) throw new Error('La conversazione è troppo lunga per essere condivisa.');
 
                 const fb = await getFirebase();
                 const expiresAtMs = Date.now() + hours * 3600 * 1000;
@@ -2230,36 +2543,37 @@ ${body}
                 });
 
                 const shares = loadShares();
-                shares[currentConv.id] = { code, id, expiresAt: expiresAtMs };
+                shares[sharedCaseId] = { code, id, expiresAt: expiresAtMs };
                 saveShares(shares);
-                renderShareModal();
+                if(currentConv?.id===sharedCaseId)renderShareModal();else{closeModals();alert('Condivisione creata per il caso precedente. Riprendi quel caso per consultare il codice.');}
             } catch (e) {
                 console.error(e);
-                renderShareModal(friendlyFirebaseError(e));
-            }
+                if(currentConv?.id===sharedCaseId)renderShareModal(friendlyFirebaseError(e));
+            } finally { btn.disabled=false;btn.textContent='Genera codice di condivisione'; }
         }
 
-        function copyShareCode() {
+        async function copyShareCode() {
             const info = loadShares()[currentConv.id];
             if (!info) return;
-            navigator.clipboard.writeText(info.code);
-            alert('Codice copiato negli appunti.');
+            try{await navigator.clipboard.writeText(info.code);alert('Codice copiato negli appunti.');}catch(_){alert('Copia automatica non disponibile: seleziona e copia il codice dal pannello.');}
         }
 
         async function revokeShare() {
+            if(!currentConv)return;
+            const sharedCaseId=currentConv.id;
             const shares = loadShares();
-            const info = shares[currentConv.id];
+            const info = shares[sharedCaseId];
             if (!info) return;
             if (!confirm('Revocare la condivisione? Il codice smetterà di funzionare subito.')) return;
             try {
                 const fb = await getFirebase();
                 await fb.fs.deleteDoc(fb.fs.doc(fb.db, 'shares', info.id));
-                delete shares[currentConv.id];
+                delete shares[sharedCaseId];
                 saveShares(shares);
-                renderShareModal();
+                if(currentConv?.id===sharedCaseId)renderShareModal();
             } catch (e) {
                 console.error(e);
-                renderShareModal(friendlyFirebaseError(e));
+                if(currentConv?.id===sharedCaseId)renderShareModal(friendlyFirebaseError(e));
             }
         }
 
@@ -2273,15 +2587,19 @@ ${body}
         }
 
         async function openSharedConversation() {
+            if (factualWorkspaceBusy()) return;
             const errBox = document.getElementById('codeError');
             const btn = document.getElementById('codeBtn');
             errBox.classList.add('hidden');
+            if(btn.disabled)return;
+            const openingRevision=factualCaseRevision;
             const code = normalizeCode(document.getElementById('codeInput').value);
-            if (code.length !== 12) {
+            if (code.length !== 12||![...code].every(c=>CODE_ALPHABET.includes(c))) {
                 errBox.textContent = 'Il codice deve avere 12 caratteri (formato XXXX-XXXX-XXXX).';
                 errBox.classList.remove('hidden');
                 return;
             }
+            if(!allowLeavingCurrentAttachment()||!saveActiveFactualDraft())return;
             const pretty = code.match(/.{4}/g).join('-');
             btn.disabled = true;
             btn.textContent = 'Apertura in corso...';
@@ -2296,21 +2614,22 @@ ${body}
                     throw e;
                 }
                 if (!snap.exists()) throw new Error('Codice non valido o scaduto.');
-                const d = snap.data();
+                const d = validateSharedEnvelope(snap.data());
                 let payload;
                 try { payload = await decryptPayload(key, d.iv, d.ct); }
                 catch { throw new Error('Impossibile decifrare: codice errato o dati alterati.'); }
 
-                const title = payload.title || 'Conversazione condivisa';
-                currentConv = {
-                    id: Date.now(),
-                    ts: new Date().toISOString(),
-                    title: title.startsWith('[Condivisa]') ? title : '[Condivisa] ' + title,
-                    messages: (payload.messages || []).map(m => ({ role: m.role, text: m.text, fileName: m.fileName || '' }))
+                if(factualCaseRevision!==openingRevision)throw new Error('Il caso attivo è cambiato durante l’apertura. Ripeti l’operazione sul caso desiderato.');
+                if (factualWorkspaceBusy()) return;
+                const title = String(payload.title || 'Conversazione condivisa');
+                const imported = {
+                    id:createCaseId(),ts:new Date().toISOString(),title:(title.startsWith('[Condivisa]')?title:'[Condivisa] '+title).slice(0,160),
+                    messages:payload.messages,workspaceFacts:payload.messages[0].text===DEFAULT_PROMPT?'':payload.messages[0].text,pendingFollowUp:''
                 };
-                document.getElementById('promptInput').value = '';
-                saveConversation();
-                renderConversation();
+                if(!storeCaseConversation(imported))return;
+                resetForNewFactualCase();currentConv=imported;
+                document.getElementById('promptInput').value=imported.workspaceFacts;
+                renderConversation();window.ecoNomyFascicolo?.onConversationSaved();
                 closeModals();
             } catch (e) {
                 console.error(e);
@@ -2436,7 +2755,7 @@ ${body}
    if(busy)return;
    const facts=string(input.value);
    if(facts.length<25){setStatus('Inserisci una descrizione del caso prima di richiedere domande a Gemini.',true);return;}
-   if(!$('apiKeyInput').value.trim()&&!localStorage.getItem('gdf_gemini_api_key')){setStatus('Inserisci prima una Google Gemini API Key, oppure usa la checklist locale senza API.',true);return;}
+   if(!getGeminiApiKey()){setStatus('Inserisci prima una Google Gemini API Key, oppure usa la checklist locale senza API.',true);return;}
    pending=facts;
    $('iqConsentDetail').textContent=facts.length>MAX_PROMPT?`Attenzione: ${facts.length} caratteri presenti. Saranno inviati solo i primi ${MAX_PROMPT}.`:`Saranno inviati ${facts.length} caratteri del quadro fattuale; nessun allegato.`;
    check.checked=false;confirmBtn.disabled=true;modal.hidden=false;check.focus();
@@ -2492,6 +2811,23 @@ ${body}
         if (!workspace || !switcher || !toggle || !menu || !name) return;
         const labels = { both: 'Entrambi i moduli', input: 'Modulo 01 · Quadro', report: 'Modulo 02 · Report', library: 'Modulo 03 · Biblioteca' };
         const choices = Array.from(menu.querySelectorAll('[data-module-view]'));
+        const storageKey = 'ecoNomy.moduleView.v1';
+        const panels = {input: document.getElementById('quadro-fattuale'), report: document.getElementById('report-operativo'), library: document.getElementById('biblioteca-giuridica')};
+        function remember(view) { try { sessionStorage.setItem(storageKey, view); } catch (_) {} }
+        function selectedChoice() { return choices.find(button => button.dataset.moduleView === workspace.dataset.view) || choices[0]; }
+        function openMenu() {
+          menu.hidden = false;
+          toggle.setAttribute('aria-expanded', 'true');
+          selectedChoice()?.focus();
+        }
+        function syncView(view) {
+          workspace.dataset.view = view;
+          remember(view);
+          // Sposta il focus soltanto se il controllo corrente viene nascosto.
+          const active = document.activeElement;
+          const activePanel = Object.keys(panels).find(key => panels[key]?.contains(active));
+          if (activePanel && view !== 'both' && activePanel !== view) toggle.focus({preventScroll:true});
+        }
 
         function closeMenu() {
           menu.hidden = true;
@@ -2512,7 +2848,10 @@ ${body}
           const sequence = ++viewSequence;
           const sameView = workspace.dataset.view === view;
           name.textContent = labels[view];
-          choices.forEach(button => button.setAttribute('aria-checked', String(button.dataset.moduleView === view)));
+          choices.forEach(button => {
+            button.setAttribute('aria-checked', String(button.dataset.moduleView === view));
+            button.tabIndex = button.dataset.moduleView === view ? 0 : -1;
+          });
           closeMenu();
           // La biblioteca resta montata quando si cambia vista: nessun indice PDF perso.
           if (view === 'library') {
@@ -2521,7 +2860,7 @@ ${body}
           }
           if (motionReduced.matches || sameView || !workspace.dataset.view) {
             workspace.classList.remove('module-view-leaving','module-view-entering');
-            workspace.dataset.view = view;
+            syncView(view);
             return;
           }
           // 1. In uscita: dissolvenza di 120 ms senza spostare le colonne.
@@ -2533,7 +2872,7 @@ ${body}
             // puo' animare la larghezza senza sfarfallare o far saltare il testo.
             workspace.classList.remove('module-view-leaving');
             workspace.classList.add('module-view-entering');
-            workspace.dataset.view = view;
+            syncView(view);
             // 3. Nuovi contenuti: emergono durante l'ultima parte dello scorrimento.
             viewTimers.push(window.setTimeout(() => {
               if (sequence !== viewSequence) return;
@@ -2543,10 +2882,29 @@ ${body}
         }
         toggle.addEventListener('click', () => {
           const open = menu.hidden;
-          menu.hidden = !open;
-          toggle.setAttribute('aria-expanded', String(open));
+          if (open) openMenu(); else closeMenu();
         });
-        choices.forEach(button => button.addEventListener('click', () => changeView(button.dataset.moduleView)));
+        choices.forEach(button => button.addEventListener('click', () => {
+          changeView(button.dataset.moduleView);
+          toggle.focus({preventScroll:true});
+        }));
+        toggle.addEventListener('keydown', event => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); openMenu(); }
+        });
+        menu.addEventListener('keydown', event => {
+          const index = choices.indexOf(document.activeElement);
+          let next;
+          if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = (index + 1) % choices.length;
+          if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = (index - 1 + choices.length) % choices.length;
+          if (event.key === 'Home') next = 0;
+          if (event.key === 'End') next = choices.length - 1;
+          if (next !== undefined) {
+            event.preventDefault();
+            choices.forEach((button,i)=>button.tabIndex=i===next?0:-1);
+            choices[next].focus();
+          }
+        });
+        switcher.addEventListener('focusout', event => { if (!switcher.contains(event.relatedTarget)) closeMenu(); });
         document.querySelectorAll('[data-focus-module]').forEach(button =>
           button.addEventListener('click', () => changeView(button.dataset.focusModule)));
         // Il trattino riduce soltanto il modulo scelto: l'altro si allarga.
@@ -2559,7 +2917,10 @@ ${body}
         document.addEventListener('keydown', event => {
           if (event.key === 'Escape' && !menu.hidden) { closeMenu(); toggle.focus(); }
         });
-        changeView('both');
+        let initialView = 'both';
+        try { const saved = sessionStorage.getItem(storageKey); if (Object.prototype.hasOwnProperty.call(labels, saved)) initialView = saved; } catch (_) {}
+        changeView(initialView);
+        window.ecoNomyModules = {show: changeView};
       })();
     </script>
 
@@ -2997,7 +3358,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
   const report=getReport(),fact=getFacts(),source=getApproved();
   return {report:report.slice(0,MAX_REPORT),facts:fact.slice(0,MAX_FACT),sources:source.slice(0,MAX_SOURCES),shortened:report.length>MAX_REPORT||fact.length>MAX_FACT||source.length>MAX_SOURCES};
  }
- function saveResult(local,ai){currentConv.verification={timestamp:new Date().toISOString(),signature:signature(getReport()),local,ai:ai||null};saveConversation();refresh();}
+ function saveResult(local,ai){currentConv.verification={timestamp:new Date().toISOString(),signature:signature(getReport()),sourceReport:getReport(),local,ai:ai||null};saveConversation();refresh();}
  function showResult(result,stale){
    const host=$('vpResults');host.replaceChildren();host.hidden=false;$('vpCopy').hidden=false;
    if(stale)addText(host,'p','ATTENZIONE: questa scheda riguarda una versione precedente del report. Ripeti la verifica prima di utilizzarla.','vp-stale');
@@ -3041,7 +3402,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  async function local(){if(!validConv()||busy)return;saveResult(sourceAudit(getReport()),null);$('vpResults').scrollIntoView({behavior:'smooth',block:'nearest'});}
  function requestRemote(){
   if(!validConv()||busy)return;
-  const apiKey=$('apiKeyInput').value.trim()||localStorage.getItem('gdf_gemini_api_key');
+  const apiKey=getGeminiApiKey();
   if(!apiKey){$('vpStatus').textContent='Per la seconda lettura inserisci prima una Google Gemini API Key. Il riscontro locale resta disponibile senza API.';return;}
   confirmData=copyPrep();$('vpConsent').checked=false;$('vpConfirmSend').disabled=true;
   $('vpLengthNote').textContent=confirmData.shortened?'Attenzione: alcuni testi sono lunghi. Saranno inviati solo i primi 60.000 caratteri del report, 36.000 del quadro e 14.000 degli estratti, con indicazione dei tagli.':'I testi del report, del quadro fattuale e degli eventuali estratti autorizzati saranno inviati per questo controllo.';
@@ -3080,7 +3441,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
    try{await navigator.clipboard.writeText(text);$('vpStatus').textContent='Scheda di verifica copiata negli appunti.';}
    catch{$('vpStatus').textContent='Copia non consentita dal browser: seleziona il testo della scheda e copialo manualmente.';}
  });
- window.ecoNomyVerifier={refresh, sourceAudit, local, signature};refresh();
+ window.ecoNomyVerifier={refresh, sourceAudit, local, signature,clearPending:closeConfirm};refresh();
 })();
 </script>
 <script>
@@ -3130,7 +3491,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  }
  function prep(){const report=getReport(),facts=getFacts(),sources=getSources();return {report:report.slice(0,MAX_REPORT),facts:facts.slice(0,MAX_FACT),sources:sources.slice(0,MAX_SOURCES),truncated:report.length>MAX_REPORT||facts.length>MAX_FACT||sources.length>MAX_SOURCES};}
  function close(){if(busy)return;$('ctConfirm').hidden=true;pending=null;$('ctConsent').checked=false;$('ctConfirmSend').disabled=true;}
- function start(){if(!valid()||busy)return;const key=$('apiKeyInput').value.trim()||localStorage.getItem('gdf_gemini_api_key');if(!key){$('ctStatus').textContent='Inserisci una Google Gemini API Key. Il Contraddittorio AI è facoltativo e non parte senza conferma.';return;}
+ function start(){if(!valid()||busy)return;const key=getGeminiApiKey();if(!key){$('ctStatus').textContent='Inserisci una Google Gemini API Key. Il Contraddittorio AI è facoltativo e non parte senza conferma.';return;}
    pending=prep();$('ctConsent').checked=false;$('ctConfirmSend').disabled=true;
    $('ctLengthNote').textContent=pending.truncated?'Attenzione: per limiti di lunghezza sono previsti tagli a 60.000 caratteri di report, 36.000 di quadro e 14.000 di estratti. La scheda evidenzierà il limite.':'Invieremo soltanto testo del quadro, report ed eventuali estratti già approvati, mai il PDF integrale.';
    $('ctConfirm').hidden=false;$('ctConsent').focus();
@@ -3153,7 +3514,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      let obj;try{obj=JSON.parse(reply.replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim());}catch{throw new Error('La risposta non è JSON valido. Il report è rimasto invariato.');}
      if(!obj||typeof obj!=='object'||Array.isArray(obj)||typeof obj.premessa!=='string'||typeof obj.sintesi!=='string'||!['alternative','favorevoli','criticita','garanzie','verifiche'].every(k=>Array.isArray(obj[k])))throw new Error('La risposta non rispetta lo schema del Contraddittorio; nessuna scheda salvata.');
      if(!currentConv||currentConv.id!==id||signature()!==sig){$('ctStatus').textContent='Il fascicolo è cambiato durante l’elaborazione: risultato non salvato.';return;}
-     currentConv.contradictory={timestamp:new Date().toISOString(),signature:sig,result:obj};
+     currentConv.contradictory={timestamp:new Date().toISOString(),signature:sig,sourceReport:getReport(),result:obj};
      saveConversation();busy=false;refresh();$('ctResults').scrollIntoView({behavior:'smooth',block:'nearest'});
    }catch(err){console.error('Contraddittorio:',err);$('ctStatus').textContent='Contraddittorio non completato: '+(err?.message||String(err))+'. Il report rimane invariato.';}
    finally{busy=false;$('ctStart').disabled=false;}
@@ -3165,7 +3526,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  $('ctConfirm').addEventListener('click',e=>{if(e.target===$('ctConfirm'))close();});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('ctConfirm').hidden)close();});
  $('ctCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('ctResults').innerText);$('ctStatus').textContent='Scheda del Contraddittorio copiata negli appunti.';}catch{$('ctStatus').textContent='Il browser non consente la copia automatica: seleziona il testo e copialo manualmente.';}});
- window.ecoNomyContraddittorio={refresh};refresh();
+ window.ecoNomyContraddittorio={refresh,signature,clearPending(){pending=null;$('ctConfirm').hidden=true;$('ctConsent').checked=false;$('ctConfirmSend').disabled=true;}};refresh();
 })();
 </script>
 <script>
@@ -3198,8 +3559,8 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  const valid=()=>!!currentConv && !!report().trim();
  function el(tag,text,cls){const x=document.createElement(tag);if(cls)x.className=cls;x.textContent=String(text||'');return x;}
  function datum(){return $('nvFactDate').value;}
- function getState(){return currentConv?.normativeAudit||{date:'',signature:sign(),items:[],records:{}};}
- function assign(obj){currentConv.normativeAudit=obj;saveConversation();}
+ function getState(){return currentConv?.normativeAudit||{date:'',signature:sign(),sourceReport:report(),items:[],records:{}};}
+ function assign(obj){if(obj.signature===sign())obj.sourceReport=report();currentConv.normativeAudit=obj;saveConversation();}
  function marker(k,a){return k+'@'+(a||'atto');}
  function maybeArt(fragment){const re=/(?:\bartt?\.?|\barticoli?)\s*(\d{1,4})(?:\s*[-–]?\s*(bis|ter|quater))?/gi;const matches=[...fragment.matchAll(re)];return matches.map(m=>m[1]+(m[2]?'-'+m[2].toLowerCase():''));}
  function addHit(out,key,art,raw){const rk=marker(key,art);if(out.some(x=>x.id===rk))return;if(out.length>=48)return;out.push({id:rk,key,article:art||'',raw:trim(raw).slice(0,120)});}
@@ -3234,7 +3595,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  function isOfficial(url){try{const u=new URL(url);return u.protocol==='https:'&&(['normattiva.it','gazzettaufficiale.it'].some(d=>u.hostname===d||u.hostname.endsWith('.'+d)));}catch{return false;}}
  function getHits(state){return Array.isArray(state.items)?state.items:[];}
  function stale(state){return state.signature!==sign();}
- function refresh(){const root=$('nvRoot');root.hidden=!valid();if(!valid()){$('nvResults').hidden=true;$('nvEditor').hidden=true;$('nvCopy').hidden=true;return;}
+ function refresh(){const root=$('nvRoot');root.hidden=!valid();if(!valid()){$('nvResults').hidden=true;$('nvResults').replaceChildren();$('nvEditor').hidden=true;$('nvCopy').hidden=true;$('nvFactDate').value='';$('nvStatus').textContent='Il controllo normativo non è stato ancora avviato.';return;}
    const st=getState();$('nvFactDate').value=st.date||'';render(st);
  }
  function render(st){const results=$('nvResults');results.replaceChildren();const hits=getHits(st);
@@ -3268,18 +3629,19 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  }
  function closeEditor(){active=null;$('nvEditor').hidden=true;$('nvAttest').checked=false;}
  function showDiff(){$('nvDiff').textContent=textCompare($('nvPastText').value,$('nvNowText').value);}
- function scanNow(){if(!valid())return;const st=getState();const hits=scan(report());st.items=hits;st.records=st.records||{};if(st.signature!==sign())for(const rec of Object.values(st.records)){if(rec){rec.confirmed=false;rec.attested=false;}}st.signature=sign();st.date=datum();closeEditor();assign(st);render(st);
+ function scanNow(){if(!valid())return;const st=getState();const hits=scan(report());st.items=hits;st.sourceReport=report();st.records=st.records||{};if(st.signature!==sign())for(const rec of Object.values(st.records)){if(rec){rec.confirmed=false;rec.attested=false;}}st.signature=sign();st.date=datum();closeEditor();assign(st);render(st);
    if(!hits.length)$('nvStatus').textContent='Nessun riferimento normativo strutturato riconosciuto. Puoi aggiungerne uno manualmente (es. art. 2 D.Lgs. 74/2000).';
  }
  function addManual(){if(!valid())return;const text=prompt('Inserisci il riferimento completo (es.: art. 2 D.Lgs. 74/2000; art. 648-bis c.p.). Non inserire dati personali.');if(!text)return;
    const hits=scan(text);if(hits.length!==1){$('nvStatus').textContent='Riferimento ambiguo o non riconosciuto. Usa la forma «art. 2 D.Lgs. 74/2000» oppure «art. 648-bis c.p.».';return;}
-   const st=getState();st.items=st.items||[];if(!st.items.some(x=>x.id===hits[0].id))st.items.push(hits[0]);st.date=datum();st.signature=sign();st.records=st.records||{};assign(st);render(st);
+   const st=getState();if(stale(st))for(const rec of Object.values(st.records||{})){if(rec){rec.confirmed=false;rec.attested=false;}}st.items=st.items||[];if(!st.items.some(x=>x.id===hits[0].id))st.items.push(hits[0]);st.date=datum();st.signature=sign();st.records=st.records||{};assign(st);render(st);
  }
  function setDate(){if(!valid())return;const st=getState(),next=datum();if(next&&isNaN(Date.parse(next+'T12:00:00'))){$('nvStatus').textContent='Data del fatto non valida.';return;}if(st.date!==next){st.date=next;for(const rec of Object.values(st.records||{})){if(rec&&typeof rec==='object'){rec.confirmed=false;rec.attested=false;}}st.signature=sign();assign(st);closeEditor();render(st);$('nvStatus').textContent+=' La data è cambiata: eventuali precedenti attestazioni sono state azzerate.';}}
  function save(){if(!active||!valid())return;const st=getState(),past=$('nvPastText').value.trim(),now=$('nvNowText').value.trim(),note=$('nvNote').value.trim(),sourceUrl=$('nvOfficialUrl').value.trim(),attested=$('nvAttest').checked;
    if(sourceUrl&&!isOfficial(sourceUrl)){$('nvStatus').textContent='Collegamento rifiutato: sono consentiti soltanto indirizzi HTTPS ufficiali di Normattiva e Gazzetta Ufficiale.';return;}
    if(attested&&REGISTRY[active.key]&&st.date<REGISTRY[active.key][0]){$('nvStatus').textContent='La data del fatto precede l’emanazione di questo atto: non è possibile attestare una sua vigenza a tale data.';return;}
    if(attested&&(!st.date||!past||!now||!active.article||(!REGISTRY[active.key]&&!isOfficial(sourceUrl)))){$('nvStatus').textContent='Per confermare servono data del fatto, articolo identificato, link ufficiale univoco e due versioni incollate. Altrimenti togli la spunta e salva una semplice annotazione.';return;}
+   if(stale(st))for(const rec of Object.values(st.records||{})){if(rec){rec.confirmed=false;rec.attested=false;}}
    st.records=st.records||{};st.records[active.id]={past:past.slice(0,7000),now:now.slice(0,7000),note:note.slice(0,2000),sourceUrl:sourceUrl.slice(0,850),attested,confirmed:attested,time:new Date().toISOString(),date:st.date};st.signature=sign();assign(st);closeEditor();render(st);
    $('nvStatus').textContent=attested?'Riscontro registrato come dichiarazione dell’operatore; non certificato dall’app.':'Annotazione salvata. La norma resta da verificare.';
  }
@@ -3294,7 +3656,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 (function(){'use strict';
  const $=id=>document.getElementById(id), E=(tag,cls='',str='')=>{const n=document.createElement(tag);if(cls)n.className=cls;if(str)n.textContent=str;return n};
  const DB_NAME='eco_nomy_fascicoli_v1', STORE='cases', MAX_VERSIONS=80;
- let dbPromise=null, activeCase=null, activeRecord=null, openQuestions=[], busy=false, draftTimer=null, generation=0, archiveView=null;
+ let dbPromise=null, activeCase=null, activeRecord=null, openQuestions=[], busy=false, backupBusy=false, draftTimer=null, generation=0, archiveView=null;
  const stamp=()=>new Date().toISOString();
  const idKey=conv=>String(conv?.id||'');
  const unique=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2,9);
@@ -3341,7 +3703,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  function setDraftView(rec){$('fcHypotheses').value=rec.draft?.hypotheses||'';openQuestions=prepareQ(rec.draft?.questions);drawQuestions();$('fcVersionNote').value='';}
  async function saveDraft(){if(!activeRecord||!activeCase||archiveView)return;const key=activeCase;const draft={hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)};
    await enqueue(async()=>{const rec=await query('get',key);if(!rec)return;rec.draft=draft;rec.updatedAt=stamp();await query('put',rec);if(activeCase===key)activeRecord=rec;});
-   status('Bozza di ipotesi e questioni salvata sul Mac; per fissarla nella cronologia premi «Salva versione».');
+   if(activeCase===key)status('Bozza di ipotesi e questioni salvata nel browser; per fissarla nella cronologia premi «Salva versione».');
  }
  function scheduleDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(()=>saveDraft().catch(e=>status('Bozza non salvata: '+e.message,true)),420);}
  function drawQuestions(){const host=$('fcQuestions');host.replaceChildren();if(!openQuestions.length){host.append(E('p','fc-sub','Nessuna questione registrata.'));return;}
@@ -3375,48 +3737,55 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
      const open=E('button','','Esamina');open.type='button';open.addEventListener('click',()=>viewArchive(rec.caseId));row.append(open);
      const del=E('button','fc-delete','Elimina');del.type='button';del.addEventListener('click',()=>deleteCase(rec.caseId));row.append(del);box.append(row);}
  }
- function factualWarning(){const changed=!!currentConv&&!!currentReport(currentConv)&&String($('promptInput').value||'')!==firstFact(currentConv);$('fcFactWarning').hidden=!changed;}
+ function factualWarning(){const changed=!!currentConv&&!!currentReport(currentConv)&&caseFactsChanged();$('fcFactWarning').hidden=!changed;}
  async function refresh(){factualWarning();const seq=++generation;const key=archiveView||idKey(currentConv);const back=$('fcBack');if(back)back.hidden=!archiveView;try{const all=await query('getAll');if(seq!==generation)return;
      const item=key?all.find(r=>r.caseId===key):null;
      $('fcRoot').hidden=!key&&!all.length;
-     if(!key){activeCase=null;activeRecord=null;$('fcWork').hidden=true;$('fcCompare').hidden=true;$('fcSave').disabled=true;$('fcExport').disabled=true;$('fcRestore').disabled=true;status('Nessun caso attivo. Puoi esaminare i fascicoli già archiviati.');}
+     if(!key){activeCase=null;activeRecord=null;$('fcWork').hidden=true;$('fcCompare').hidden=true;$('fcSave').disabled=true;$('fcExport').disabled=true;$('fcExportPlain').disabled=true;$('fcRestore').disabled=true;status('Nessun caso attivo. Puoi esaminare i fascicoli già archiviati.');}
      else {
        const isNew=activeCase!==key;activeCase=key;activeRecord=item||null;const viewing=!!archiveView;const canEdit=!viewing&&!!currentConv&&!!currentReport(currentConv);
-       $('fcWork').hidden=!canEdit;$('fcSave').disabled=!canEdit;$('fcExport').disabled=!(item&&item.versions?.length);$('fcRestore').disabled=!(item&&item.versions?.length);
+       $('fcWork').hidden=!canEdit;$('fcSave').disabled=!canEdit;$('fcExport').disabled=!(item&&item.versions?.length);$('fcExportPlain').disabled=$('fcExport').disabled;$('fcRestore').disabled=!(item&&item.versions?.length);
        if(item){if(isNew)setDraftView(item);renderVersionControls(item);status(`${viewing?'Archivio consultato':'Fascicolo attivo'} · ${item.versions.length} versioni locali.${viewing?' Per tornare al caso attivo premi «Torna al caso».':''}`);}
        else{$('fcCompare').hidden=true;status(canEdit?'Fascicolo pronto: la prima versione verrà salvata dopo l’elaborazione o con «Salva versione».':'Il fascicolo non è ancora stato salvato.');}
        if(viewing){$('fcWork').hidden=true;}
      }
      renderArchive(all);
-   }catch(e){$('fcRoot').hidden=false;$('fcWork').hidden=true;$('fcCompare').hidden=true;$('fcSave').disabled=true;$('fcExport').disabled=true;status('Archivio locale non disponibile: '+e.message+'. Usa Chrome o Safari in modalità normale.',true);}
+   }catch(e){$('fcRoot').hidden=false;$('fcWork').hidden=true;$('fcCompare').hidden=true;$('fcSave').disabled=true;$('fcExport').disabled=true;$('fcExportPlain').disabled=true;status('Archivio locale non disponibile: '+e.message+'. Usa Chrome o Safari in modalità normale.',true);}
  }
  async function manualSave(){if(busy||!currentConv||archiveView||!currentReport(currentConv))return;busy=true;$('fcSave').disabled=true;const target=currentConv,id=idKey(target);const draft={hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)};
    try{const version=await enqueue(async()=>{const rec=await query('get',id)||empty(target);if(rec.versions.length>=MAX_VERSIONS)throw new Error('Limite di 80 versioni per fascicolo: esporta un backup prima di proseguire.');rec.title=short(target.title).slice(0,110);rec.draft=draft;
       const v=snapshot(rec,target,'manuale',$('fcVersionNote').value);rec.versions.push(v);rec.updatedAt=stamp();await query('put',rec);return v;});archiveView=null;await refresh();status(`Versione v${version.number} salvata nel browser. Esporta un backup JSON per conservarla fuori dal browser.`);$('fcTo').value=version.id;compare();$('fcVersionNote').value='';}
    catch(e){status('Salvataggio fallito: '+e.message+' · non chiudere questa pagina; esporta eventuali dati già disponibili.',true);}finally{busy=false;$('fcSave').disabled=false;}
  }
- async function onConversationSaved(){const conv=currentConv;if(!conv||!currentReport(conv))return;const id=idKey(conv),auto=reportSignature(conv);
-   try{const result=await enqueue(async()=>{const rec=await query('get',id)||empty(conv);if(rec.lastAutoKey===auto)return null;
+ async function onConversationSaved(){const conv=currentConv?{...currentConv,messages:currentConv.messages.map(m=>({...m}))}:null;if(!conv||!currentReport(conv))return;const id=idKey(conv),auto=reportSignature(conv);
+   const workspace={facts:String($('promptInput').value||''),pendingFollowUp:String($('followUpInput').value||'')};
+   const stagedDraft=activeCase===id&&!archiveView?{hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)}:null;
+   const capturedFact=currentFact(conv);
+   try{const result=await enqueue(async()=>{const rec=await query('get',id)||empty(conv);rec.workspace=workspace;if(stagedDraft)rec.draft=stagedDraft;if(rec.lastAutoKey===auto){rec.updatedAt=stamp();await query('put',rec);return null;}
      if(rec.versions.length>=MAX_VERSIONS)throw new Error('80 versioni raggiunte: esporta un backup.');rec.title=short(conv.title).slice(0,110);
-     if(activeCase===id&&!archiveView){rec.draft={hypotheses:$('fcHypotheses').value.slice(0,8500),questions:prepareQ(openQuestions)};}
-     const v=snapshot(rec,conv,'auto',rec.versions.length?'Nuova risposta Gemini':'Prima elaborazione');rec.versions.push(v);rec.lastAutoKey=auto;rec.updatedAt=stamp();await query('put',rec);return v;});if(result){await refresh();if(activeCase===id){$('fcTo').value=result.id;compare();}}}
+     const v=snapshot(rec,conv,'auto',rec.versions.length?'Nuova risposta Gemini':'Prima elaborazione');v.factual=capturedFact;rec.versions.push(v);rec.lastAutoKey=auto;rec.updatedAt=stamp();await query('put',rec);return v;});if(result){await refresh();if(activeCase===id){$('fcTo').value=result.id;compare();}}}
    catch(e){status('Attenzione: la nuova versione automatica NON è stata archiviata: '+e.message,true);console.error('Fascicolo:',e);}
  }
- async function exportJSON(){const key=activeCase;if(!key)return;try{const rec=await query('get',key);if(!rec){status('Nessun fascicolo da esportare.',true);return;}
+ async function exportJSON(protectedBackup=true){const key=activeCase;if(!key||backupBusy)return;backupBusy=true;try{const rec=await query('get',key);if(!rec){status('Nessun fascicolo da esportare.',true);return;}
     const backup={format:'eco-nomy-fascicolo-v1',exportedAt:stamp(),notice:'Copia di lavoro, non archivio forense. PDF e allegati binari non inclusi.',case:rec};
-    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=E('a');a.href=url;a.download=`eco-nomy_fascicolo_${key.replace(/[^a-zA-Z0-9_-]/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);status('Backup JSON preparato. Verifica che il file sia stato effettivamente scaricato.');
-   }catch(e){status('Esportazione non riuscita: '+e.message,true);}
+    let exported=backup;
+    if(protectedBackup){const password=await window.ecoNomyBackup.askPassword(true);if(password===null)return;status('Preparazione del backup protetto…');exported=await window.ecoNomyBackup.encrypt(backup,password);}
+    else if(!confirm('Il JSON non cifrato contiene i testi del fascicolo ed è leggibile da chiunque acceda al file. Vuoi esportarlo?'))return;
+    const blob=new Blob([JSON.stringify(exported,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=E('a');a.href=url;a.download=protectedBackup?`eco-nomy_backup_protetto_${new Date().toISOString().slice(0,10)}.json`:`eco-nomy_fascicolo_${key.replace(/[^a-zA-Z0-9_-]/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);status(protectedBackup?'Backup cifrato preparato. Conserva la password separatamente e verifica il file scaricato.':'JSON non cifrato preparato. Verifica il file scaricato.');
+   }catch(e){status('Esportazione non riuscita: '+e.message,true);}finally{backupBusy=false;}
  }
- async function importJSON(file){if(!file)return;
-   try{if(file.size>25*1024*1024)throw new Error('Backup oltre 25 MB: dimensione non ammessa.');const json=JSON.parse(await file.text());
+ async function importJSON(file){if(!file||backupBusy)return;backupBusy=true;
+   try{if(file.size>40*1024*1024)throw new Error('File oltre 40 MB: dimensione non ammessa.');let json=JSON.parse(await file.text());
+     if(json?.format===window.ecoNomyBackup.format){const password=await window.ecoNomyBackup.askPassword(false);if(password===null)return;status('Apertura del backup protetto…');json=await window.ecoNomyBackup.decrypt(json,password);}
+     else if(file.size>25*1024*1024)throw new Error('JSON non cifrato oltre 25 MB.');
      if(json?.format!=='eco-nomy-fascicolo-v1'||!json.case||!Array.isArray(json.case.versions)||!json.case.versions.length||json.case.versions.length>MAX_VERSIONS)throw new Error('Formato non valido o numero di versioni non supportato.');
-     const old=json.case,rec={caseId:'importato_'+unique(),title:('Importato · '+short(old.title||'fascicolo')).slice(0,110),createdAt:stamp(),updatedAt:stamp(),lastAutoKey:'',draft:{hypotheses:String(old.draft?.hypotheses||'').slice(0,8500),questions:prepareQ(old.draft?.questions)},versions:[]};
+     const old=json.case,rec={caseId:'importato_'+unique(),title:('Importato · '+short(old.title||'fascicolo')).slice(0,110),createdAt:stamp(),updatedAt:stamp(),lastAutoKey:'',...(old.workspace?{workspace:{facts:String(old.workspace.facts||'').slice(0,220000),pendingFollowUp:String(old.workspace.pendingFollowUp||'').slice(0,220000)}}:{}),draft:{hypotheses:String(old.draft?.hypotheses||'').slice(0,8500),questions:prepareQ(old.draft?.questions)},versions:[]};
      for(const raw of json.case.versions){if(typeof raw?.factual!=='string'||typeof raw?.report!=='string'||raw.factual.length>220000||raw.report.length>250000)throw new Error('Una versione supera i limiti di testo o è incompleta.');
        rec.versions.push({id:unique(),number:rec.versions.length+1,at:(typeof raw.at==='string'&&!isNaN(Date.parse(raw.at)))?raw.at:stamp(),origin:raw.origin==='auto'?'auto':'manuale',note:short(raw.note).slice(0,240),factual:raw.factual,report:raw.report,reportRole:'Ultima risposta Gemini, non necessariamente report consolidato',hypothesis:String(raw.hypothesis||'').slice(0,8500),questions:prepareQ(raw.questions),messageCount:Number.isFinite(raw.messageCount)?Math.max(0,Math.min(raw.messageCount,9999)):0,attachments:Array.isArray(raw.attachments)?raw.attachments.slice(0,50).map(x=>String(x).slice(0,240)):[]});
      }
      await enqueue(()=>query('put',rec));await viewArchive(rec.caseId);status('Backup importato in un nuovo fascicolo senza sovrascrivere gli esistenti. Puoi esaminarlo e riprenderne una versione.');
    }catch(e){status('Importazione rifiutata: '+e.message,true);}
-   finally{$('fcImportFile').value='';}
+   finally{backupBusy=false;$('fcImportFile').value='';}
  }
  async function restore(){const version=activeRecord?.versions.find(x=>x.id===$('fcTo').value);if(!version)return;
    if(!confirm('Creare un NUOVO caso dal testo di questa versione? La conversazione attuale non verrà sovrascritta; allegati PDF e verifiche normative NON saranno ripristinati.'))return;
@@ -3425,7 +3794,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
    if(typeof allowLeavingCurrentAttachment==='function'&&!allowLeavingCurrentAttachment())return;
    if(typeof removeFile==='function')removeFile();const num=Date.now()+Math.floor(Math.random()*1000);
    const newConv={id:num,ts:stamp(),title:('Ripreso da v'+version.number+' · '+(activeRecord.title||'fascicolo')).slice(0,80),messages:[{role:'user',text:version.factual||'',fileName:''},...(version.report?[{role:'model',text:version.report}]:[])]};
-   archiveView=null;activeCase=null;activeRecord=null;currentConv=newConv;$('promptInput').value=version.factual||'';
+   resetForNewFactualCase();archiveView=null;activeCase=null;activeRecord=null;currentConv=newConv;$('promptInput').value=version.factual||'';
    if(version.report){saveConversation();renderConversation();}else{document.getElementById('outputArea').innerHTML=emptyReportMarkup;renderHistory();}
    document.querySelector('[data-module-view="input"]')?.click();status('Versione ripresa come nuovo caso. Controlla tutti i dati prima di una nuova elaborazione.');
  }
@@ -3437,10 +3806,10 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
     try{await enqueue(()=>query('delete',key));if(archiveView===key)archiveView=null;if(activeCase===key){activeCase=null;activeRecord=null;}await refresh();status('Fascicolo eliminato dall’archivio locale. La conversazione eventualmente presente nelle recenti non viene cancellata.');}
     catch(e){status('Eliminazione non riuscita: '+e.message,true);}
  }
- $('fcSave').addEventListener('click',manualSave);$('fcExport').addEventListener('click',exportJSON);$('fcImport').addEventListener('click',()=>$('fcImportFile').click());$('fcImportFile').addEventListener('change',e=>importJSON(e.target.files?.[0]));$('fcRestore').addEventListener('click',restore);
+ $('fcSave').addEventListener('click',manualSave);$('fcExport').addEventListener('click',()=>exportJSON(true));$('fcExportPlain').addEventListener('click',()=>exportJSON(false));$('fcImport').addEventListener('click',()=>$('fcImportFile').click());$('fcImportFile').addEventListener('change',e=>importJSON(e.target.files?.[0]));$('fcRestore').addEventListener('click',restore);
  $('fcAddQuestion').addEventListener('click',addQuestion);$('fcNewQuestion').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addQuestion();}});
  $('fcHypotheses').addEventListener('input',scheduleDraft);$('promptInput').addEventListener('input',factualWarning);$('fcFrom').addEventListener('change',compare);$('fcTo').addEventListener('change',compare);
- window.ecoNomyFascicolo={refresh,onConversationSaved,exportJSON};
+ window.ecoNomyFascicolo={refresh,onConversationSaved,exportJSON,listCases:()=>query('getAll'),getCase:id=>query('get',String(id)),flush(){clearTimeout(draftTimer);return saveDraft();},reset(){clearTimeout(draftTimer);saveDraft().catch(e=>status('Bozza del caso precedente non salvata: '+e.message,true));archiveView=null;activeCase=null;activeRecord=null;openQuestions=[];$('fcHypotheses').value='';$('fcNewQuestion').value='';$('fcVersionNote').value='';return refresh();}};
  refresh();
 })();
 </script>
@@ -3632,27 +4001,102 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 })();
 </script>
 <script>
+/* Confronto locale: nessuna richiesta AI, nessuna modifica del report. */
+(function(){
+ const $=id=>document.getElementById(id);
+ const root=$('cpRoot');if(!root)return;
+ const text=(v,max=12000)=>String(v??'').slice(0,max);
+ const reportOf=c=>[...(c?.messages||[])].reverse().find(m=>m.role==='model')?.text||'';
+ function snapshotFor(c,mode){
+   const report=reportOf(c),audit=mode==='verifier'?c?.verification:mode==='contraddittorio'?c?.contradictory:c?.normativeAudit;
+   if(!audit)return {audit:null,report:null,stale:false};
+   const signature=mode==='contraddittorio'?window.ecoNomyContraddittorio?.signature?.():window.ecoNomyVerifier?.signature?.(report);
+   const stale=!!signature&&audit.signature!==signature;
+   return {audit,report:typeof audit.sourceReport==='string'?audit.sourceReport:!stale?report:null,stale};
+ }
+ function comparisonRows(c,mode){
+   const {audit,report,stale}=snapshotFor(c,mode),rows=[];
+   const add=(category,point,observation,action='')=>rows.push({category,point:text(point),observation:text(observation),action:text(action)});
+   if(!audit)return {rows,report,stale,summary:'Questo controllo non è ancora stato eseguito.'};
+   let summary='';
+   if(mode==='verifier'){
+     const ai=audit.ai;summary=ai?.sintesi||'Riscontro delle fonti locali; nessuna revisione AI del merito.';
+     for(const [key,title] of [['fatti','Fatti'],['prove','Prove'],['giuridico','Qualificazione'],['alternative','Alternative']])for(const x of (Array.isArray(ai?.[key])?ai[key]:[]).slice(0,10))if(x&&typeof x==='object')add(title,x.punto,[x.esito,x.motivazione].filter(Boolean).join(' · '));
+     for(const x of (audit.local?.refs||[]).slice(0,30))add('Fonte locale',x.title+(x.page!=null?' · pagina '+x.page:''),x.status+' · '+(x.note||''),'Verificare il documento originale e la pertinenza del passaggio.');
+     for(const x of (ai?.priorita||[]).slice(0,10))add('Da approfondire','',typeof x==='string'?x:x?.azione);
+   }else if(mode==='contraddittorio'){
+     const result=audit.result||{};summary=result.sintesi||result.premessa||'';
+     for(const x of (result.criticita||[]).slice(0,10))add('Criticità',x.tesi,x.obiezione,x.riscontro);
+     for(const x of (result.alternative||[]).slice(0,10))add('Ipotesi alternativa',x.ipotesi,[x.base,x.limiti].filter(Boolean).join(' · '),x.verifica);
+     for(const x of (result.favorevoli||[]).slice(0,10))add('Circostanza favorevole',x.elemento,x.riscontro,x.limite);
+     for(const x of (result.verifiche||[]).slice(0,10))add('Da approfondire','',typeof x==='string'?x:x?.azione);
+   }else{
+     summary='Riscontri annotati dall’operatore sulle fonti ufficiali. Data del fatto: '+(audit.date||'non indicata')+'.';
+     for(const item of (audit.items||[]).slice(0,48)){
+       const rec=audit.records?.[item.id];
+       add('Normativa',item.raw||item.key+(item.article?' · art. '+item.article:''),rec?[(rec.confirmed&&rec.attested&&!stale?'Riscontro dichiarato dall’operatore':'Da ricontrollare'),rec.note].filter(Boolean).join(' · '):'Riferimento rilevato nel testo; non ancora verificato.',rec?'Testo storico: '+text(rec.past,1500)+'\nTesto attuale: '+text(rec.now,1500):'Aprire la fonte ufficiale e controllare versione, data e applicabilità.');
+     }
+   }
+   return {rows,report,stale,summary};
+ }
+ function refresh(){
+   const current=reportOf(currentConv);root.hidden=!current;if(!current){$('cpRows').replaceChildren();$('cpReport').textContent='';$('cpStatus').textContent='';return;}
+   const mode=$('cpSource').value,data=comparisonRows(currentConv,mode);
+   $('cpSummary').textContent=data.summary;
+   $('cpReport').textContent=data.report??(data.rows.length?'La copia del report esaminato non è disponibile per questo controllo storico. Ripeti il controllo per registrarla.':current);
+   const changed=caseFactsChanged();
+   $('cpStatus').textContent=(data.stale?'Controllo riferito a una versione precedente. ':changed?'I fatti in bozza sono cambiati: il report non li incorpora ancora. ':'')+(data.rows.length?data.rows.length+' osservazioni disponibili. Il report resta invariato.':'Nessuna osservazione disponibile: avvia uno dei controlli esistenti.');
+   $('cpStatus').classList.toggle('cp-stale',data.stale||changed);
+   const host=$('cpRows');host.replaceChildren();
+   for(const row of data.rows){
+     const tr=document.createElement('tr');
+     const cells=[row.category,row.point||'Nessun passaggio indicato',row.observation,row.action||'Approfondimento non specificato'];
+     for(let i=0;i<cells.length;i++){const td=document.createElement('td');td.textContent=cells[i];if(i===1&&row.point&&data.report){const hint=document.createElement('small');hint.textContent=data.report.toLocaleLowerCase('it').includes(row.point.toLocaleLowerCase('it'))?'Passaggio presente testualmente nel report.':'Riferimento formulato dal controllo: verificare il collegamento nel report.';td.append(hint);}tr.append(td);}host.append(tr);
+   }
+ }
+ $('cpSource').addEventListener('change',refresh);
+ window.ecoNomyComparison={refresh,comparisonRows,snapshotFor};refresh();
+})();
+
+</script>
+<script>
 /* Stato UI indipendente dal report e dai dati: nessun contenuto viene eliminato. */
 (function(){
- const names={vpRoot:'Verificatore giuridico-probatorio',ctRoot:'Contraddittorio',nvRoot:'Controllo normativa vigente',fcRoot:'Fascicolo digitale',prRoot:'Report professionale'};
- function setFold(el,button,closed,label){
-   el.classList.toggle('eco-folded',closed);
-   button.setAttribute('aria-expanded',String(!closed));
-   button.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(closed?'Apri ':'Chiudi ')+label;
- }
  function init(){
-   Object.keys(names).forEach(id=>{
-     const el=document.getElementById(id),btn=document.querySelector('[data-eco-fold="'+id+'"]');
-     if(!el||!btn)return;
-     setFold(el,btn,true,'pannello');
-     btn.addEventListener('click',()=>setFold(el,btn,!el.classList.contains('eco-folded'),'pannello'));
-   });
-   const out=document.getElementById('outputArea'),btn=document.getElementById('ecoReportFoldBtn');
-   if(out&&btn){
-     const apply=closed=>{out.classList.toggle('eco-folded',closed);btn.setAttribute('aria-expanded',String(!closed));btn.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(closed?'Apri':'Chiudi')+' risposta principale';};
-     apply(false);
-     btn.addEventListener('click',()=>apply(!out.classList.contains('eco-folded')));
+   const names={outputArea:'risposta principale',vpRoot:'Verificatore giuridico-probatorio',ctRoot:'Contraddittorio',nvRoot:'Controllo normativa vigente',fcRoot:'Fascicolo digitale',prRoot:'Report professionale',cpRoot:'Confronto report e verifiche',followUpBox:'Prosegui la conversazione'};
+   const entries=Object.keys(names).map(id=>({id,el:document.getElementById(id),btn:id==='outputArea'?document.getElementById('ecoReportFoldBtn'):document.querySelector('[data-eco-fold="'+id+'"]')})).filter(e=>e.el&&e.btn);
+   const available=e=>!e.el.hidden&&!e.el.classList.contains('hidden');
+   const announce=text=>{const status=document.getElementById('ecoFoldStatus');if(status)status.textContent=text;};
+   function setFold(e,closed){
+     e.el.classList.toggle('eco-folded',closed);
+     e.btn.setAttribute('aria-expanded',String(!closed));
+     const label=e.id==='outputArea'?'risposta principale':'pannello';
+     e.btn.innerHTML='<i class="fa-solid fa-chevron-'+(closed?'down':'up')+'" aria-hidden="true"></i> '+(closed?'Apri ':'Chiudi ')+label;
+     e.btn.setAttribute('aria-label',(closed?'Apri ':'Chiudi ')+names[e.id]);
    }
+   function openOnly(id){
+     const target=entries.find(e=>e.id===id);
+     if(!target||!available(target))return;
+     entries.forEach(e=>setFold(e,e!==target));
+   }
+   entries.forEach(e=>{
+     // I controlli assistivi descrivono il corpo nascosto, non l'intestazione.
+     const body=e.el.querySelector('.vp-body,.ct-body,.nv-body,.fc-body,.pr-body,.cp-body');
+     if(body){body.id=body.id||e.id+'Body';e.btn.setAttribute('aria-controls',body.id);}
+     setFold(e,e.id!=='outputArea');
+     e.btn.addEventListener('click',()=>{
+       if(e.el.classList.contains('eco-folded'))openOnly(e.id);else setFold(e,true);
+     });
+   });
+   document.getElementById('ecoOpenAll').addEventListener('click',()=>{
+     entries.filter(available).forEach(e=>setFold(e,false));
+     announce('Tutte le sezioni disponibili sono aperte.');
+   });
+   document.getElementById('ecoCloseAll').addEventListener('click',()=>{
+     entries.forEach(e=>setFold(e,true));
+     announce('Tutte le sezioni sono chiuse. I contenuti sono conservati.');
+   });
+   window.ecoNomyPanels={open:openOnly};
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
