@@ -607,6 +607,7 @@ window.ecoNomyBackup=(() => {
 
 .cp-root{margin-top:18px;border:1px solid #b6cbdc;border-radius:14px;background:#f8fbfd;overflow:hidden}
 .cp-head{padding:16px 18px;background:#edf4fa}.cp-head h3{font-size:16px;font-weight:800;color:#123554}.cp-head p{font-size:11px;color:#52718a;margin-top:5px}
+.cp-head{display:flex;align-items:center;gap:13px}.cp-head-icon{width:37px;height:37px;flex:0 0 auto;border:1px solid #d4af3773;color:#b8860b;border-radius:10px;display:grid;place-items:center;font-size:18px}body.eco-tech .cp-head-icon{color:#e4c76c}
 .cp-root>.eco-fold-toggle{margin-left:18px}.cp-body{padding:0 18px 18px}.cp-note{font-size:12px;line-height:1.7;color:#486076;margin:0 0 14px}.cp-body label{font-size:12px;font-weight:700;display:block}.cp-body select{width:100%;padding:9px;border:1px solid #b6cbdc;border-radius:8px;background:#fff;margin-top:6px}
 #cpStatus,#cpSummary{font-size:12px;line-height:1.65;margin:12px 0}#cpStatus.cp-stale{padding:9px;background:#fff4d5;color:#854d0e;border-radius:8px}
 .cp-original{margin:12px 0;font-size:12px}.cp-original summary{cursor:pointer;font-weight:700}.cp-original pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow-y:auto;font:12px/1.7 system-ui;background:#fff;border:1px solid #dbe4ed;border-radius:8px;padding:12px;margin-top:9px}
@@ -1520,7 +1521,7 @@ window.ecoNomyBackup=(() => {
 
 
             <section id="cpRoot" class="eco-foldable cp-root no-print" aria-label="Confronto report e verifiche" hidden>
-                <div class="cp-head"><h3>Confronto report e verifiche</h3><p>Report esaminato · Criticità · Ipotesi alternative · Riscontri normativi</p></div>
+                <div class="cp-head"><span class="cp-head-icon"><i class="fa-solid fa-code-compare" aria-hidden="true"></i></span><div><h3>Confronto report e verifiche</h3><p>Report esaminato · Criticità · Ipotesi alternative · Riscontri normativi</p></div></div>
                 <button type="button" class="eco-fold-toggle" data-eco-fold="cpRoot" aria-controls="cpBody" aria-expanded="false">Apri pannello</button>
                 <div class="cp-body" id="cpBody">
                     <p class="cp-note">Le verifiche aggiungono osservazioni: non riscrivono il report. Il confronto è locale, senza nuove chiamate AI. I riscontri normativi sono dichiarati dall’operatore; le osservazioni AI richiedono controllo sulle fonti.</p>
