@@ -3665,12 +3665,25 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 .eco-genius-fab:focus-visible{outline:3px solid #76c8ec;outline-offset:4px}
 .eco-genius-tip{position:absolute;right:calc(100% + 12px);top:50%;transform:translate(6px,-50%);border:1px solid rgba(212,175,55,.55);border-radius:10px;background:#0b2341;color:#fff;padding:9px 12px;font-weight:700;font-size:12px;line-height:1.3;white-space:nowrap;box-shadow:0 6px 16px #071a3033;visibility:hidden;opacity:0;pointer-events:none;transition:.2s}
 .eco-genius-fab:is(:hover,:focus-visible) .eco-genius-tip{transform:translate(0,-50%);opacity:1;visibility:visible}
-/* Messaggio visibile sopra Genius: resta cliccabile anche su smartphone. */
-.eco-genius-notice{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:90px;white-space:nowrap;padding:8px 12px;background:#fff;color:#0b2f4d;border:1.5px solid #d4af37;border-radius:13px;box-shadow:0 5px 20px rgba(6,25,46,.24);font:800 13px/1.15 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:.02em;pointer-events:auto;z-index:2}
-.eco-genius-notice::after{content:"";position:absolute;left:50%;bottom:-7px;width:11px;height:11px;background:#fff;border-right:1.5px solid #d4af37;border-bottom:1.5px solid #d4af37;transform:translateX(-50%) rotate(45deg)}
-.eco-genius-notice-dot{display:block;width:8px;height:8px;flex:none;border-radius:50%;background:#e64d58;box-shadow:0 0 0 2px #fde6e7}
-.eco-genius-fab:hover .eco-genius-notice,.eco-genius-fab:focus-visible .eco-genius-notice{border-color:#c19a39;box-shadow:0 7px 22px rgba(6,25,46,.3)}
-@media(max-width:760px){.eco-genius-notice{bottom:calc(100% + 11px);font-size:12px;min-width:82px;padding:8px 10px}}
+/* Fumetto informativo discreto: appare solo per pochi secondi a pagina ferma. */
+.eco-genius-notice{
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%,4px);
+  display:inline-flex;align-items:center;justify-content:center;
+  white-space:nowrap;padding:5px 9px;background:#fff;color:#153b55;
+  border:1px solid #d5b65b;border-radius:9px;
+  box-shadow:0 4px 13px rgba(6,25,46,.16);
+  font:700 10.5px/1.2 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  letter-spacing:.01em;pointer-events:none;z-index:2;
+  visibility:hidden;opacity:0;transition:opacity .28s ease,transform .28s ease,visibility 0s linear .28s;
+}
+.eco-genius-notice::after{
+  content:"";position:absolute;left:50%;bottom:-5px;width:7px;height:7px;
+  background:#fff;border-right:1px solid #d5b65b;border-bottom:1px solid #d5b65b;
+  transform:translateX(-50%) rotate(45deg)
+}
+.eco-genius-notice.is-visible{visibility:visible;opacity:1;transform:translate(-50%,0);transition:opacity .28s ease,transform .28s ease,visibility 0s}
+@media(max-width:760px){.eco-genius-notice{bottom:calc(100% + 7px);padding:4px 7px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.eco-genius-notice{transition:none!important}}
 @media print{.eco-genius-notice{display:none!important}}
 
 #ecoGeniusDialog{max-width:min(920px,calc(100vw - 24px));width:920px;max-height:min(86vh,920px);margin:auto;padding:0;border:1px solid #c6d8e5;border-radius:18px;background:#f6f9fc;color:#17334c;box-shadow:0 24px 85px rgba(2,16,35,.45);overflow:hidden}
@@ -3711,7 +3724,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 <!-- Genius di eco-nomy: presentazione del portale (non invia dati né chiama API). -->
 <button type="button" class="eco-genius-fab no-print" id="ecoGeniusOpen" aria-label="Genius: scopri cos'è eco-nomy e tutte le funzionalità" aria-haspopup="dialog" aria-controls="ecoGeniusDialog" title="Scopri eco-nomy">
   <img src="logogenius.png" onerror="this.onerror=null;this.src='iconagem.png'" alt="" width="58" height="58" loading="lazy">
-  <span class="eco-genius-notice" aria-hidden="true"><span class="eco-genius-notice-dot"></span>qui info</span>
+  <span class="eco-genius-notice" id="ecoGeniusNotice" aria-hidden="true">qui info</span>
   <span class="eco-genius-tip" aria-hidden="true">Scopri cosa fa eco-nomy</span>
 </button>
 <dialog id="ecoGeniusDialog" class="no-print" aria-labelledby="ecoGeniusTitle" aria-describedby="ecoGeniusDescription">
@@ -3757,8 +3770,41 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
     const close=document.getElementById('ecoGeniusClose');
     const done=document.getElementById('ecoGeniusDone');
     if(!dialog||!open||!close||!done)return;
-    const show=()=>{if(!dialog.open)dialog.showModal();};
+    // Messaggio «qui info»: si vede brevemente solo quando la pagina rimane inattiva.
+    // Non segue lo scorrimento, non lampeggia e non è mai mostrato sul dialog aperto.
+    const notice=document.getElementById('ecoGeniusNotice');
+    let idleTimer=null, hideTimer=null, lastShown=0, displays=0;
+    const IDLE_MS=2500, VISIBLE_MS=3200, MIN_INTERVAL_MS=30000, MAX_DISPLAYS=2;
+    const hideNotice=()=>{if(notice)notice.classList.remove('is-visible');clearTimeout(hideTimer);};
+    const mayDisplay=()=>!!notice&&!dialog.open&&document.visibilityState==='visible'&&
+      !document.querySelector('dialog[open]')&&displays<MAX_DISPLAYS&&
+      Date.now()-lastShown>=MIN_INTERVAL_MS;
+    const onIdle=()=>{
+      if(!mayDisplay())return;
+      notice.classList.add('is-visible');
+      lastShown=Date.now();displays++;
+      hideTimer=setTimeout(hideNotice,VISIBLE_MS);
+    };
+    const activity=()=>{
+      hideNotice();clearTimeout(idleTimer);
+      if(displays>=MAX_DISPLAYS)return;
+      // Al ritorno alla quiete rispetta anche il periodo minimo fra due apparizioni.
+      const wait=Math.max(IDLE_MS,MIN_INTERVAL_MS-(Date.now()-lastShown));
+      idleTimer=setTimeout(onIdle,wait);
+    };
+    // scroll capture intercetta anche lo scorrimento di pannelli e contenitori interni.
+    window.addEventListener('scroll',activity,{capture:true,passive:true});
+    window.addEventListener('wheel',activity,{passive:true});
+    window.addEventListener('touchmove',activity,{passive:true});
+    window.addEventListener('touchstart',activity,{passive:true});
+    window.addEventListener('pointerdown',activity,{passive:true});
+    window.addEventListener('keydown',activity);
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden){clearTimeout(idleTimer);hideNotice();}else activity();
+    });
+    const show=()=>{hideNotice();clearTimeout(idleTimer);displays=MAX_DISPLAYS;if(!dialog.open)dialog.showModal();};
     const hide=()=>{if(dialog.open)dialog.close();};
+    activity();
     open.addEventListener('click',show);
     close.addEventListener('click',hide);
     done.addEventListener('click',hide);
