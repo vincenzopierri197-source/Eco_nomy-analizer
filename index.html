@@ -5418,6 +5418,10 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
  body.eco-tech :is(.ct-dialog label,.vp-dialog label,.iq-dialog label){background:#1d364a;color:#dbeefa;}
  body.eco-tech .kb-doc[aria-pressed=true]{background:#24495b;color:#c2f5fc;border-color:#67cdda;}
  body.eco-tech .iq-summary[data-error=true]{color:#ffb5ba!important;}
+ /* Il riquadro iniziale del report ha una superficie chiara: testo scuro dedicato. */
+ body.eco-tech #outputArea .report-empty{color-scheme:light;background:#f9fcff;color:#18344d;}
+ body.eco-tech #outputArea .report-empty h3{color:#18344d!important;}
+ body.eco-tech #outputArea .report-empty p{color:#40566b!important;}
  @media(max-width:900px){body.eco-tech::before{background-size:95vw auto;background-position:50% 30%;opacity:.14;}body.eco-tech .eco-tech-crest{width:45px;height:52px;margin-left:0;}}
  @media(max-width:640px){body.eco-tech .site-main{padding:16px 12px 26px;gap:16px;}body.eco-tech :is(.input-panel,.report-panel){padding:18px;}body.eco-tech .panel-banner{margin:-18px -18px 20px;padding:18px;}body.eco-tech .portal-command{padding:18px;}body.eco-tech #promptInput{font-size:16px;}body.eco-tech .portal-identity{flex-wrap:wrap;}}
  @media(prefers-reduced-motion:reduce){body.eco-tech *,body.eco-tech *::before,body.eco-tech *::after{transition:none!important;animation:none!important;scroll-behavior:auto!important;}}
