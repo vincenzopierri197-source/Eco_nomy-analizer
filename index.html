@@ -1107,6 +1107,18 @@ window.ecoNomyBackup=(() => {
  body.eco-tech .recent-panel #historyList .eco-recent-case-row>button:last-child{color:#52697e!important;}
  body.eco-tech .recent-panel #historyList .eco-recent-case-row>button:last-child:hover{color:#a82030!important;}
  body.eco-tech .site-footer .eco-school-footer{display:block;width:66px;height:76px;object-fit:contain;margin:0 auto 12px;filter:drop-shadow(0 3px 7px #0005);}
+ /* Report generato: superficie di lettura chiara con palette indipendente dal tema scuro. */
+ body.eco-tech #outputArea{background:#fff!important;color:#243b53!important;color-scheme:light;}
+ body.eco-tech #outputArea>[data-report-role="model"]{background:#fff;color:#243b53!important;font-size:14px;line-height:1.85;}
+ body.eco-tech #outputArea [data-report-role="model"] :is(p,li,ul,ol,span,div,em,small){color:#243b53!important;}
+ body.eco-tech #outputArea [data-report-role="model"] :is(h1,h2,h3,h4,h5,h6,strong,b){color:#102a43!important;border-color:#c4d2df;}
+ body.eco-tech #outputArea [data-report-role="model"] a{color:#075985!important;text-decoration:underline;}
+ body.eco-tech #outputArea [data-report-role="model"] blockquote{background:#edf5fa!important;color:#243b53!important;border-left-color:#237b91;}
+ body.eco-tech #outputArea [data-report-role="model"] :is(pre,code){background:#edf2f7!important;color:#243b53!important;border-color:#c4d2df;}
+ body.eco-tech #outputArea [data-report-role="model"] table{background:#fff!important;color:#243b53!important;}
+ body.eco-tech #outputArea [data-report-role="model"] :is(td,th){background:#f7fafc!important;color:#243b53!important;border-color:#b8cbdc!important;}
+ body.eco-tech #outputArea [data-report-role="model"] th{background:#e3edf5!important;color:#102a43!important;}
+ body.eco-tech #outputArea [data-report-role="model"] hr{border-color:#c4d2df!important;}
  @media(max-width:900px){body.eco-tech #ecoBackgroundSymbol{width:95vw;right:2.5vw;top:30%;transform:translateY(-30%);opacity:.14;}body.eco-tech .eco-tech-crest{width:45px;height:52px;margin-left:0;}}
  @media(max-width:640px){body.eco-tech .site-main{padding:16px 12px 26px;gap:16px;}body.eco-tech :is(.input-panel,.report-panel){padding:18px;}body.eco-tech .panel-banner{margin:-18px -18px 20px;padding:18px;}body.eco-tech .portal-command{padding:18px;}body.eco-tech #promptInput{font-size:16px;}body.eco-tech .portal-identity{flex-wrap:wrap;}}
  @media(prefers-reduced-motion:reduce){body.eco-tech *,body.eco-tech *::before,body.eco-tech *::after{transition:none!important;animation:none!important;scroll-behavior:auto!important;}}
