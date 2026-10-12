@@ -3665,6 +3665,14 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 .eco-genius-fab:focus-visible{outline:3px solid #76c8ec;outline-offset:4px}
 .eco-genius-tip{position:absolute;right:calc(100% + 12px);top:50%;transform:translate(6px,-50%);border:1px solid rgba(212,175,55,.55);border-radius:10px;background:#0b2341;color:#fff;padding:9px 12px;font-weight:700;font-size:12px;line-height:1.3;white-space:nowrap;box-shadow:0 6px 16px #071a3033;visibility:hidden;opacity:0;pointer-events:none;transition:.2s}
 .eco-genius-fab:is(:hover,:focus-visible) .eco-genius-tip{transform:translate(0,-50%);opacity:1;visibility:visible}
+/* Messaggio visibile sopra Genius: resta cliccabile anche su smartphone. */
+.eco-genius-notice{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:90px;white-space:nowrap;padding:8px 12px;background:#fff;color:#0b2f4d;border:1.5px solid #d4af37;border-radius:13px;box-shadow:0 5px 20px rgba(6,25,46,.24);font:800 13px/1.15 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:.02em;pointer-events:auto;z-index:2}
+.eco-genius-notice::after{content:"";position:absolute;left:50%;bottom:-7px;width:11px;height:11px;background:#fff;border-right:1.5px solid #d4af37;border-bottom:1.5px solid #d4af37;transform:translateX(-50%) rotate(45deg)}
+.eco-genius-notice-dot{display:block;width:8px;height:8px;flex:none;border-radius:50%;background:#e64d58;box-shadow:0 0 0 2px #fde6e7}
+.eco-genius-fab:hover .eco-genius-notice,.eco-genius-fab:focus-visible .eco-genius-notice{border-color:#c19a39;box-shadow:0 7px 22px rgba(6,25,46,.3)}
+@media(max-width:760px){.eco-genius-notice{bottom:calc(100% + 11px);font-size:12px;min-width:82px;padding:8px 10px}}
+@media print{.eco-genius-notice{display:none!important}}
+
 #ecoGeniusDialog{max-width:min(920px,calc(100vw - 24px));width:920px;max-height:min(86vh,920px);margin:auto;padding:0;border:1px solid #c6d8e5;border-radius:18px;background:#f6f9fc;color:#17334c;box-shadow:0 24px 85px rgba(2,16,35,.45);overflow:hidden}
 #ecoGeniusDialog::backdrop{background:rgba(3,16,33,.78);backdrop-filter:blur(6px)}
 .eco-genius-shell{display:flex;flex-direction:column;max-height:min(86vh,920px);min-height:0}
@@ -3703,6 +3711,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 <!-- Genius di eco-nomy: presentazione del portale (non invia dati né chiama API). -->
 <button type="button" class="eco-genius-fab no-print" id="ecoGeniusOpen" aria-label="Genius: scopri cos'è eco-nomy e tutte le funzionalità" aria-haspopup="dialog" aria-controls="ecoGeniusDialog" title="Scopri eco-nomy">
   <img src="logogenius.png" onerror="this.onerror=null;this.src='iconagem.png'" alt="" width="58" height="58" loading="lazy">
+  <span class="eco-genius-notice" aria-hidden="true"><span class="eco-genius-notice-dot"></span>qui info</span>
   <span class="eco-genius-tip" aria-hidden="true">Scopri cosa fa eco-nomy</span>
 </button>
 <dialog id="ecoGeniusDialog" class="no-print" aria-labelledby="ecoGeniusTitle" aria-describedby="ecoGeniusDescription">
