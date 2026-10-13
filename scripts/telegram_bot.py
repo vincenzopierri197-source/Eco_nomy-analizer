@@ -10,6 +10,8 @@ Comandi:
   /issues                       issue aperte
   /ultimi                       ultimi 5 commit
   /pubblica                     avvia la pubblicazione su GitHub Pages
+  /manutenzione on|off          attiva/disattiva la pagina di manutenzione
+  /manutenzione                 mostra lo stato attuale
   file o foto                   caricati in uploads/
 """
 import base64
@@ -27,6 +29,7 @@ GH_TOKEN = os.environ["GITHUB_TOKEN"]
 REPO = os.environ["GITHUB_REPOSITORY"]
 BRANCH = os.environ.get("BRANCH", "main")
 PUBLISH_WORKFLOW = os.environ.get("PUBLISH_WORKFLOW", "Pubblica eco-nomy su GitHub Pages")
+MAINT_WORKFLOW = os.environ.get("MAINT_WORKFLOW", "Gestione manutenzione ECO-NOMY")
 MAX_UPLOAD = 20 * 1024 * 1024  # limite dei bot Telegram
 
 HELP = (
@@ -36,6 +39,7 @@ HELP = (
     "/issues\n"
     "/ultimi\n"
     "/pubblica\n"
+    "/manutenzione on|off\n"
     "Oppure mandami un file o una foto: li carico in uploads/."
 )
 
@@ -139,15 +143,59 @@ def cmd_ultimi(arg, msg):
     reply("\n".join(f"• {c['commit']['message'].splitlines()[0]}" for c in res))
 
 
-def cmd_pubblica(arg, msg):
+def find_workflow(name):
+    """Ritorna (workflow, errore). Cerca il workflow per nome."""
     st, res = gh("GET", "/actions/workflows")
     if st != 200:
-        return reply(err(st, res))
-    wf = next((w for w in res.get("workflows", []) if w["name"] == PUBLISH_WORKFLOW), None)
+        return None, err(st, res)
+    wf = next((w for w in res.get("workflows", []) if w["name"] == name), None)
     if not wf:
-        return reply(f"❌ Workflow «{PUBLISH_WORKFLOW}» non trovato.")
-    st, res = gh("POST", f"/actions/workflows/{wf['id']}/dispatches", data={"ref": BRANCH})
+        return None, f"❌ Workflow «{name}» non trovato."
+    return wf, None
+
+
+def dispatch(wf, inputs=None):
+    data = {"ref": BRANCH}
+    if inputs:
+        data["inputs"] = inputs
+    return gh("POST", f"/actions/workflows/{wf['id']}/dispatches", data=data)
+
+
+def cmd_pubblica(arg, msg):
+    wf, problem = find_workflow(PUBLISH_WORKFLOW)
+    if problem:
+        return reply(problem)
+    st, res = dispatch(wf)
     reply("🚀 Pubblicazione avviata." if st == 204 else err(st, res))
+
+
+def maintenance_active():
+    """True/False in base al file .maintenance, None se non si riesce a leggere."""
+    st, _ = gh("GET", "/contents/.maintenance", params={"ref": BRANCH})
+    return True if st == 200 else False if st == 404 else None
+
+
+def cmd_manutenzione(arg, msg):
+    arg = arg.strip().lower()
+    active = maintenance_active()
+    if not arg:
+        if active is None:
+            return reply("❌ Non riesco a leggere lo stato della manutenzione.")
+        return reply("🛠️ Manutenzione ATTIVA" if active else "✅ Manutenzione DISATTIVA (sito normale)")
+    wanted = {"on": "ATTIVA", "attiva": "ATTIVA", "off": "DISATTIVA", "disattiva": "DISATTIVA"}.get(arg)
+    if not wanted:
+        return reply("Uso: /manutenzione on | off\n(senza parametro mostra lo stato)")
+    if active is not None and active == (wanted == "ATTIVA"):
+        stato = "attiva" if active else "disattiva"
+        return reply(f"Manutenzione già {stato}, nessuna modifica. Per ripubblicare il sito usa /pubblica.")
+    wf, problem = find_workflow(MAINT_WORKFLOW)
+    if problem:
+        return reply(problem)
+    st, res = dispatch(wf, {"modalita": wanted})
+    if st == 204:
+        reply(f"🛠️ Richiesta inviata: manutenzione {wanted}. Ti avviso quando la pubblicazione è finita.")
+    else:
+        reply(err(st, res))
 
 
 def upload(msg):
@@ -174,7 +222,7 @@ def upload(msg):
 
 COMMANDS = {
     "/issue": cmd_issue, "/nota": cmd_nota, "/issues": cmd_issues,
-    "/ultimi": cmd_ultimi, "/pubblica": cmd_pubblica,
+    "/ultimi": cmd_ultimi, "/pubblica": cmd_pubblica, "/manutenzione": cmd_manutenzione,
 }
 
 
