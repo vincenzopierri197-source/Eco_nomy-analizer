@@ -1,0 +1,65 @@
+name: Notifica Telegram
+
+on:
+  # 1) Push: solo sul branch indicato, ignorando documentazione
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  # 2) Pull request: aperte, chiuse, riaperte
+  pull_request:
+    types: [opened, closed, reopened]
+    branches: [main]
+  # 3) Issue: aperte e chiuse
+  issues:
+    types: [opened, closed]
+  # 4) Build/test: scatta quando finisce il workflow chiamato "CI"
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # Per workflow_run avvisa SOLO se la build è fallita
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: Invia messaggio a Telegram
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          RUN_NAME: ${{ github.event.workflow_run.name }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          FIRST_LINE=$(printf '%s' "$COMMIT_MSG" | head -n1)
+          case "$EVENT" in
+            push)
+              MSG=$(printf '⬆️ Push su %s (%s)\n👤 %s\n📝 %s\n🔗 %s' "$BRANCH" "$REPO" "$ACTOR" "$FIRST_LINE" "$COMMIT_URL") ;;
+            pull_request)
+              MSG=$(printf '🔀 Pull request %s (%s)\n📝 %s\n👤 %s\n🔗 %s' "$ACTION" "$REPO" "$PR_TITLE" "$ACTOR" "$PR_URL") ;;
+            issues)
+              MSG=$(printf '🐛 Issue %s (%s)\n📝 %s\n👤 %s\n🔗 %s' "$ACTION" "$REPO" "$ISSUE_TITLE" "$ACTOR" "$ISSUE_URL") ;;
+            workflow_run)
+              MSG=$(printf '❌ Build fallita: %s (%s)\n🌿 Branch: %s\n🔗 %s' "$RUN_NAME" "$REPO" "$RUN_BRANCH" "$RUN_URL") ;;
+            *)
+              exit 0 ;;
+          esac
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=${MSG}" \
+            -d disable_web_page_preview=true
