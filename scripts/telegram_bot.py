@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Bot Telegram "a richiesta" per GitHub Actions.
 
-Ad ogni esecuzione legge i messaggi arrivati al bot, esegue i comandi e risponde.
+Due modalità:
+  - webhook: un Cloudflare Worker passa il messaggio nella variabile TG_UPDATE
+  - polling: senza TG_UPDATE legge i messaggi in coda con getUpdates
 Nessuna dipendenza esterna (solo libreria standard).
 
 Comandi:
@@ -18,6 +20,7 @@ import base64
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -92,24 +95,28 @@ def err(status, body):
 
 
 def put_file(path, content, message, append=False):
-    """Crea o aggiorna un file nel repo con un commit."""
+    """Crea o aggiorna un file nel repo con un commit (riprova se c'è un conflitto)."""
     url_path = "/contents/" + urllib.parse.quote(path)
-    st, cur = gh("GET", url_path, params={"ref": BRANCH})
-    sha, old = None, b""
-    if st == 200 and isinstance(cur, dict):
-        sha = cur["sha"]
-        if append:
-            if cur.get("encoding") != "base64":
-                return 400, {"message": "file esistente troppo grande per aggiungere righe"}
-            old = base64.b64decode(cur["content"])
-    body = {
-        "message": message,
-        "branch": BRANCH,
-        "content": base64.b64encode(old + content if append else content).decode(),
-    }
-    if sha:
-        body["sha"] = sha
-    return gh("PUT", url_path, data=body)
+    for attempt in range(3):
+        st, cur = gh("GET", url_path, params={"ref": BRANCH})
+        sha, old = None, b""
+        if st == 200 and isinstance(cur, dict):
+            sha = cur["sha"]
+            if append:
+                if cur.get("encoding") != "base64":
+                    return 400, {"message": "file esistente troppo grande per aggiungere righe"}
+                old = base64.b64decode(cur["content"])
+        body = {
+            "message": message,
+            "branch": BRANCH,
+            "content": base64.b64encode(old + content if append else content).decode(),
+        }
+        if sha:
+            body["sha"] = sha
+        st, res = gh("PUT", url_path, data=body)
+        if st not in (409, 422) or attempt == 2:
+            return st, res
+        time.sleep(2)
 
 
 def cmd_issue(arg, msg):
@@ -238,17 +245,7 @@ def handle(msg):
     return fn(arg, msg) if fn else reply(HELP)
 
 
-def main():
-    res = tg("getUpdates", timeout=0, allowed_updates=["message"])
-    if not res.get("ok"):
-        print("Errore Telegram:", res.get("description"))
-        sys.exit(1)
-    updates = res.get("result", [])
-    if not updates:
-        print("Nessun messaggio nuovo.")
-        return
-    # Conferma subito i messaggi: se qualcosa va storto non vengono rieseguiti in loop.
-    tg("getUpdates", offset=max(u["update_id"] for u in updates) + 1, timeout=0)
+def process(updates):
     done = 0
     for u in updates:
         msg = u.get("message")
@@ -261,6 +258,33 @@ def main():
             print("Errore:", type(e).__name__)
         done += 1
     print(f"Messaggi elaborati: {done}")
+
+
+def main():
+    raw = os.environ.get("TG_UPDATE", "").strip()
+    if raw:  # modalità webhook: il Worker passa il messaggio già pronto
+        try:
+            update = json.loads(raw)
+        except ValueError:
+            print("Messaggio non valido.")
+            sys.exit(1)
+        return process([update])
+
+    # modalità polling: legge i messaggi in coda
+    res = tg("getUpdates", timeout=0, allowed_updates=["message"])
+    if not res.get("ok"):
+        if res.get("error_code") == 409:
+            print("Webhook attivo: nessun messaggio da leggere qui.")
+            return
+        print("Errore Telegram:", res.get("description"))
+        sys.exit(1)
+    updates = res.get("result", [])
+    if not updates:
+        print("Nessun messaggio nuovo.")
+        return
+    # Conferma subito i messaggi: se qualcosa va storto non vengono rieseguiti in loop.
+    tg("getUpdates", offset=max(u["update_id"] for u in updates) + 1, timeout=0)
+    process(updates)
 
 
 if __name__ == "__main__":
