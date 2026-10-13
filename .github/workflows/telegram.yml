@@ -1,28 +1,25 @@
 name: Notifica Telegram
 
 on:
-  # 1) Push: solo sul branch indicato, ignorando documentazione
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-  # 2) Pull request: aperte, chiuse, riaperte
   pull_request:
     types: [opened, closed, reopened]
     branches: [main]
-  # 3) Issue: aperte e chiuse
   issues:
     types: [opened, closed]
-  # 4) Build/test: scatta quando finisce il workflow chiamato "CI"
+  # Avvisa quando uno dei tuoi workflow FALLISCE (i nomi devono essere identici)
   workflow_run:
-    workflows: ["CI"]
+    workflows:
+      - "Gestione manutenzione ECO-NOMY"
+      - "Pubblica eco-nomy su GitHub Pages"
+      - "Pulisci condivisioni scadute"
     types: [completed]
 
 jobs:
   notify:
     runs-on: ubuntu-latest
-    # Per workflow_run avvisa SOLO se la build è fallita
+    # Per workflow_run avvisa SOLO se è fallito
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'failure'
@@ -55,11 +52,16 @@ jobs:
             issues)
               MSG=$(printf '🐛 Issue %s (%s)\n📝 %s\n👤 %s\n🔗 %s' "$ACTION" "$REPO" "$ISSUE_TITLE" "$ACTOR" "$ISSUE_URL") ;;
             workflow_run)
-              MSG=$(printf '❌ Build fallita: %s (%s)\n🌿 Branch: %s\n🔗 %s' "$RUN_NAME" "$REPO" "$RUN_BRANCH" "$RUN_URL") ;;
+              MSG=$(printf '❌ Workflow fallito: %s (%s)\n🌿 Branch: %s\n🔗 %s' "$RUN_NAME" "$REPO" "$RUN_BRANCH" "$RUN_URL") ;;
             *)
               exit 0 ;;
           esac
-          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+          RESP=$(curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TG_CHAT}" \
             --data-urlencode "text=${MSG}" \
-            -d disable_web_page_preview=true
+            -d disable_web_page_preview=true)
+          if ! printf '%s' "$RESP" | grep -q '"ok":true'; then
+            echo "Telegram ha risposto con un errore:"
+            printf '%s' "$RESP" | grep -o '"description":"[^"]*"'
+            exit 1
+          fi
