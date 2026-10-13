@@ -1,3 +1,4 @@
+
 name: Pubblica eco-nomy su GitHub Pages
 
 on:
@@ -15,12 +16,13 @@ concurrency:
 
 jobs:
   deploy:
-    # Pubblica esclusivamente il branch predefinito del repository.
     if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Recupera i file del sito
         uses: actions/checkout@v6
@@ -28,10 +30,33 @@ jobs:
       - name: Configura GitHub Pages
         uses: actions/configure-pages@v6
 
-      - name: Prepara il sito statico
+      - name: Prepara il sito
+        run: |
+          mkdir -p _site
+
+          if [ -f .maintenance ]; then
+            cp maintenance.html _site/index.html
+
+            if [ -f CNAME ]; then
+              cp CNAME _site/CNAME
+            fi
+
+            if [ -f .nojekyll ]; then
+              cp .nojekyll _site/.nojekyll
+            fi
+          else
+            rsync -a \
+              --exclude='.git/' \
+              --exclude='.github/' \
+              --exclude='_site/' \
+              --exclude='.maintenance' \
+              ./ _site/
+          fi
+
+      - name: Carica il sito
         uses: actions/upload-pages-artifact@v5
         with:
-          path: .
+          path: _site
 
       - name: Pubblica il sito
         id: deployment
