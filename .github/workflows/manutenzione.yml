@@ -1,11 +1,11 @@
 
-name: EcoNomy-AnalYzer - Manutenzione
+name: Gestione manutenzione ECO-NOMY
 
 on:
   workflow_dispatch:
     inputs:
       modalita:
-        description: "Scegli cosa fare"
+        description: "Attiva o disattiva la manutenzione"
         required: true
         type: choice
         options:
@@ -14,16 +14,43 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   manutenzione:
     runs-on: ubuntu-latest
-    steps:
-      - name: Controlla repository
-        uses: actions/checkout@v4
 
-      - name: Verifica richiesta
+    steps:
+      - name: Recupera il repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Imposta lo stato della manutenzione
+        env:
+          MODALITA: ${{ inputs.modalita }}
+          BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          echo "Modalità richiesta: ${{ inputs.modalita }}"
-          echo "Questo workflow è un esempio iniziale."
-          echo "Non modifica ancora il sito pubblicato."
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ "$MODALITA" = "ATTIVA" ]; then
+            touch .maintenance
+          else
+            rm -f .maintenance
+          fi
+
+          git add -A -- .maintenance
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Manutenzione: $MODALITA"
+            git push origin "HEAD:$BRANCH"
+          fi
+
+      - name: Avvia la pubblicazione aggiornata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          gh workflow run pages.yml --ref "$BRANCH"
