@@ -1,3 +1,4 @@
+
 {
   "finestra_ore": 30,
   "max_voci": 40,
@@ -8,32 +9,49 @@
       "tipo": "Notizia"
     },
     {
-      "nome": "Normattiva",
-      "sito": "https://www.normattiva.it/showArchivioNews",
+      "nome": "Senato - Disegni di legge",
+      "url": "https://www.senato.it/static/bgt/UltimiAtti/feedDDL.xml",
       "tipo": "Notizia"
     },
     {
-      "nome": "Senato della Repubblica",
-      "sito": "https://www.senato.it/leg17/3303?testo_generico=807",
+      "nome": "Camera - Disegni di legge annunciati",
+      "url": "https://documenti.camera.it/apps/rssFeeds/ultimiPDL/pdlUltimiAnnunciati.asp?idLegislatura=18",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "EUR-Lex - Legislazione Parlamento e Consiglio",
+      "url": "https://eur-lex.europa.eu/EN/display-feed.rss?rssId=162",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "EUR-Lex - Gazzetta ufficiale UE, serie L",
+      "url": "https://eur-lex.europa.eu/EN/display-feed.rss?rssId=222",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "EUR-Lex - Proposte della Commissione",
+      "url": "https://eur-lex.europa.eu/EN/display-feed.rss?rssId=161",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "Normattiva",
+      "sito": "https://www.normattiva.it/showArchivioNews",
       "tipo": "Notizia"
     },
     {
       "nome": "Governo italiano",
       "sito": "http://www.governo.it/feed/rss",
       "tipo": "Notizia"
-    },
-    {
-      "nome": "EUR-Lex",
-      "sito": "https://eur-lex.europa.eu/content/help/search/predefined-rss.html",
-      "tipo": "Notizia"
     }
   ],
   "parole_chiave": [
-    "tribut", "fiscal", "imposta", "imposte", "iva\\b", "vat\\b", "accise", "dogan",
-    "evasion", "frod", "fraud", "riciclagg", "antiriciclagg", "autoriciclagg", "money laundering",
+    "tribut", "fiscal", "imposta", "imposte", "iva\\b", "vat\\b",
+    "accise", "dogan", "evasion", "frod", "fraud", "riciclagg",
+    "antiriciclagg", "autoriciclagg", "money laundering",
     "confisc", "sequestr", "sanzion", "reat", "penal",
-    "74/2000", "231/2001", "condon", "concordato", "contenzioso", "accertament",
-    "crisi d.impresa", "insolvenz", "bancarott", "riscossione", "cartell",
-    "agenzia delle entrate", "guardia di finanza", "dichiarazion", "\\btax"
+    "74/2000", "231/2001", "condon", "concordato", "contenzioso",
+    "accertament", "crisi d.impresa", "insolvenz", "bancarott",
+    "riscossione", "cartell", "agenzia delle entrate",
+    "guardia di finanza", "dichiarazion", "\\btax"
   ]
 }
