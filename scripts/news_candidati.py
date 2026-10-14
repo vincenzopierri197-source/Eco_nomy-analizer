@@ -151,6 +151,80 @@ def normalize_xml_encoding(raw):
 
     return raw
 
+
+class _NewsHTMLParser(HTMLParser):
+    """Estrae titoli, link e date da pagine ufficiali senza feed."""
+    def __init__(self, base_url):
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.in_heading = False
+        self.heading = []
+        self.in_anchor = False
+        self.anchor = []
+        self.anchor_href = ""
+        self.events = []
+        self.text_parts = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        tag = tag.lower()
+        if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            self.in_heading = True
+            self.heading = []
+        if tag == "a":
+            self.in_anchor = True
+            self.anchor = []
+            self.anchor_href = attrs.get("href", "")
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in ("h1", "h2", "h3", "h4", "h5", "h6") and self.in_heading:
+            title = re.sub(r"\\s+", " ", "".join(self.heading)).strip()
+            if title and title.lower() not in ("archivio news", "archivio novità"):
+                self.events.append(("heading", title, ""))
+            self.in_heading = False
+        if tag == "a" and self.in_anchor:
+            label = re.sub(r"\\s+", " ", "".join(self.anchor)).strip()
+            if self.anchor_href:
+                self.events.append(("link", label, urljoin(self.base_url, self.anchor_href)))
+            self.in_anchor = False
+
+    def handle_data(self, data):
+        text = re.sub(r"\\s+", " ", data).strip()
+        if not text:
+            return
+        self.text_parts.append(text)
+        if self.in_heading:
+            self.heading.append(data)
+        if self.in_anchor:
+            self.anchor.append(data)
+        date_match = re.search(r"\\b(\\d{1,2})\\s+([A-Za-zÀ-ÿ]+)\\s+(\\d{4})\\b", text)
+        if date_match:
+            self.events.append(("date", date_match.group(0), ""))
+
+
+def parse_html_news(raw, charset, base_url):
+    parser = _NewsHTMLParser(base_url)
+    parser.feed(raw.decode(charset or "utf-8", errors="replace"))
+    entries = []
+    current_title = ""
+    last_entry = None
+    for kind, value, link in parser.events:
+        if kind == "heading":
+            current_title = value.strip(' "“”')
+        elif kind == "link" and link:
+            label = value.lower()
+            if current_title and (label in ("testo completo", "leggi", "approfondisci") or label == ""):
+                last_entry = {"titolo": current_title, "link": link, "data": None, "testo": ""}
+                entries.append(last_entry)
+            elif value and len(value) > 12 and not label.startswith(("rss", "home", "salta")):
+                last_entry = {"titolo": value, "link": link, "data": None, "testo": ""}
+                entries.append(last_entry)
+        elif kind == "date" and last_entry and not last_entry["data"]:
+            last_entry["data"] = parse_date(value)
+    return entries
+
+
 def parse_date(value):
     if not value:
         return None
@@ -306,10 +380,31 @@ def collect(config, now=None):
                         "Inseriscilo come 'url' nel news-config.json."
                     )
                 else:
-                    problems.append(
-                        f"{name}: nessun feed RSS/Atom trovato "
-                        "nei link dichiarati della pagina."
+                    raw, charset, content_type, final_url = fetch(source["sito"])
+                    items = parse_html_news(raw, charset, final_url)
+                    if not items:
+                        problems.append(
+                            f"{name}: nessun feed RSS/Atom trovato e "
+                            "nessuna notizia estraibile dalla pagina HTML."
+                        )
+                        continue
+                    notes.append(
+                        f"{name}: uso lettura HTML della pagina ufficiale "
+                        "perché non dichiara un feed RSS/Atom."
                     )
+                    for item in items:
+                        date = item["data"]
+                        if not date or date < limite:
+                            continue
+                        searchable = item["titolo"] + " " + item["testo"]
+                        if regex.search(searchable):
+                            candidates.append({
+                                "fonte": name,
+                                "tipo": source.get("tipo", "Notizia"),
+                                "titolo": item["titolo"][:200],
+                                "url": safe_url(urljoin(final_url, item["link"])),
+                                "data": date,
+                            })
                     continue
 
             else:
