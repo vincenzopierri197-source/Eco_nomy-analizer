@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """Raccoglie novita' normative da feed RSS/Atom/RDF ufficiali.
 Propone le voci candidate senza modificare news.json e senza usare AI."""
@@ -19,7 +18,7 @@ from urllib.parse import urljoin
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UA = "Mozilla/5.0 (compatible; eco-nomy-news/1.1)"
+UA = "Mozilla/5.0 (compatible; eco-nomy-news/1.2)"
 TIMEOUT = 25
 
 
@@ -36,11 +35,11 @@ def fetch(url):
         },
     )
 
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-        raw = r.read()
-        charset = r.headers.get_content_charset() or "utf-8"
-        content_type = r.headers.get("Content-Type", "")
-        final_url = r.geturl()
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as response:
+        raw = response.read()
+        charset = response.headers.get_content_charset() or "utf-8"
+        content_type = response.headers.get("Content-Type", "")
+        final_url = response.geturl()
 
     return raw, charset, content_type, final_url
 
@@ -55,14 +54,19 @@ class _FeedLinks(HTMLParser):
         if tag.lower() != "link":
             return
 
-        a = dict(attrs)
-        rel = (a.get("rel") or "").lower().split()
-        typ = (a.get("type") or "").lower().split(";")[0].strip()
-        href = a.get("href")
+        attrs = dict(attrs)
+        rel = (attrs.get("rel") or "").lower().split()
+        feed_type = (
+            (attrs.get("type") or "")
+            .lower()
+            .split(";")[0]
+            .strip()
+        )
+        href = attrs.get("href")
 
         if (
             "alternate" in rel
-            and typ in (
+            and feed_type in (
                 "application/rss+xml",
                 "application/atom+xml",
                 "application/rdf+xml",
@@ -76,26 +80,77 @@ class _FeedLinks(HTMLParser):
 
 def discover_feeds(site):
     raw, charset, _, final_url = fetch(site)
-    text = raw.decode(charset, errors="replace")
 
-    parser = _FeedLinks(final_url)
-    parser.feed(text)
-
-    # Se la pagina stessa è un feed, non serve scoprirne un altro.
     if looks_like_xml_feed(raw):
         return [final_url]
+
+    text = raw.decode(charset, errors="replace")
+    parser = _FeedLinks(final_url)
+    parser.feed(text)
 
     return list(dict.fromkeys(parser.links))[:5]
 
 
 def looks_like_xml_feed(raw):
     try:
-        root = ET.fromstring(raw)
-    except ET.ParseError:
+        root = ET.fromstring(normalize_xml_encoding(raw))
+    except (ET.ParseError, ValueError):
         return False
 
-    root_name = root.tag.split("}")[-1].lower()
+    root_name = tag_name(root)
     return root_name in ("rss", "feed", "rdf")
+
+
+def normalize_xml_encoding(raw):
+    """Corregge dichiarazioni XML incoerenti senza alterare i dati.
+
+    ElementTree deve ricevere i byte originali per rilevare correttamente
+    UTF-8, UTF-16 e UTF-32. Se la dichiarazione dice UTF-16 ma il contenuto
+    e' ASCII/UTF-8 senza BOM e senza il pattern UTF-16, corregge la sola
+    dichiarazione.
+    """
+    has_bom = raw.startswith((
+        b"\xff\xfe",
+        b"\xfe\xff",
+        b"\x00\x00\xfe\xff",
+        b"\xff\xfe\x00\x00",
+    ))
+
+    has_utf16_pattern = (
+        raw.startswith(b"\x00<")
+        or raw.startswith(b"<\x00")
+        or raw.startswith(b"\x00\x00<\x00")
+        or raw.startswith(b"<\x00\x00\x00")
+    )
+
+    if has_bom or has_utf16_pattern:
+        return raw
+
+    # La dichiarazione XML e' ASCII per definizione.
+    # Correggiamo solo il nome della codifica dichiarata.
+    declaration = re.match(
+        rb"(\s*<\?xml\b[^?]*\bencoding\s*=\s*)(['\"])([^'\"]+)(['\"])",
+        raw[:300],
+        flags=re.IGNORECASE,
+    )
+
+    if not declaration:
+        return raw
+
+    declared = declaration.group(3).lower().replace("_", "-")
+
+    # Se il documento dichiara UTF-16 ma non ha BOM o struttura UTF-16,
+    # puo' essere un feed malformato con contenuto ASCII/UTF-8.
+    if declared in ("utf-16", "utf-16le", "utf-16be"):
+        raw = re.sub(
+            rb"(\bencoding\s*=\s*)(['\"])[^'\"]+(['\"])",
+            rb"\1\2UTF-8\3",
+            raw,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+
+    return raw
 
 
 def parse_date(value):
@@ -105,22 +160,22 @@ def parse_date(value):
     value = value.strip()
 
     try:
-        d = parsedate_to_datetime(value)
+        date = parsedate_to_datetime(value)
     except Exception:
         try:
-            d = datetime.fromisoformat(
+            date = datetime.fromisoformat(
                 value.replace("Z", "+00:00")
             )
         except Exception:
             return None
 
-    if d is None:
+    if date is None:
         return None
 
-    if d.tzinfo is None:
-        return d.replace(tzinfo=timezone.utc)
+    if date.tzinfo is None:
+        return date.replace(tzinfo=timezone.utc)
 
-    return d.astimezone(timezone.utc)
+    return date.astimezone(timezone.utc)
 
 
 def tag_name(element):
@@ -128,6 +183,8 @@ def tag_name(element):
 
 
 def parse_feed(raw, base_url=""):
+    raw = normalize_xml_encoding(raw)
+
     try:
         root = ET.fromstring(raw)
     except ET.ParseError as exc:
@@ -136,19 +193,8 @@ def parse_feed(raw, base_url=""):
             f"XML non valido ({exc}); risposta iniziale: {preview!r}"
         ) from exc
 
-    root_name = tag_name(root)
-
-    if root_name not in ("rss", "feed", "rdf", "rdf:rdf"):
-        # Per i namespace XML, tag_name rimuove già il namespace.
-        if not any(
-            tag_name(el) in ("item", "entry")
-            for el in root.iter()
-        ):
-            raise ValueError(
-                f"Formato XML non riconosciuto: elemento radice {root_name!r}"
-            )
-
     entries = []
+
     for element in root.iter():
         if tag_name(element) not in ("item", "entry"):
             continue
@@ -160,7 +206,7 @@ def parse_feed(raw, base_url=""):
             "testo": "",
         }
 
-        # In RDF il link può essere nell'attributo rdf:about.
+        # In RDF il collegamento puo' trovarsi nell'attributo rdf:about.
         for key, value in element.attrib.items():
             if key.split("}")[-1].lower() == "about" and value:
                 item["link"] = urljoin(base_url, value)
@@ -184,13 +230,20 @@ def parse_feed(raw, base_url=""):
                     item["link"] = urljoin(base_url, link_value)
 
             elif name in (
-                "pubdate", "published", "updated", "date",
-                "created", "issued"
+                "pubdate",
+                "published",
+                "updated",
+                "date",
+                "created",
+                "issued",
             ) and not item["data"]:
                 item["data"] = parse_date(value)
 
             elif name in (
-                "description", "summary", "encoded", "content"
+                "description",
+                "summary",
+                "encoded",
+                "content",
             ) and not item["testo"]:
                 item["testo"] = re.sub(
                     r"\s+",
@@ -213,6 +266,7 @@ def safe_url(url):
         return ""
 
     url = url.strip()
+
     if url.startswith(("http://", "https://")):
         return url
 
@@ -221,6 +275,7 @@ def safe_url(url):
 
 def collect(config, now=None):
     now = now or datetime.now(timezone.utc)
+
     limite = now - timedelta(
         hours=config.get("finestra_ore", 30)
     )
@@ -242,14 +297,15 @@ def collect(config, now=None):
         try:
             if source.get("url"):
                 urls = [source["url"]]
+
             elif source.get("sito"):
                 urls = discover_feeds(source["sito"])
 
                 if urls:
                     notes.append(
                         f"{name}: feed individuato -> "
-                        f"{', '.join(urls)}. Inseriscilo come 'url' "
-                        "nel file news-config.json."
+                        f"{', '.join(urls)}. "
+                        "Inseriscilo come 'url' nel news-config.json."
                     )
                 else:
                     problems.append(
@@ -257,6 +313,7 @@ def collect(config, now=None):
                         "nei link dichiarati della pagina."
                     )
                     continue
+
             else:
                 problems.append(
                     f"{name}: manca sia 'url' sia 'sito' nel config."
@@ -265,9 +322,11 @@ def collect(config, now=None):
 
         except urllib.error.HTTPError as exc:
             problems.append(
-                f"{name}: errore HTTP {exc.code} durante il recupero."
+                f"{name}: errore HTTP {exc.code} durante "
+                "il recupero della pagina."
             )
             continue
+
         except Exception as exc:
             problems.append(
                 f"{name}: impossibile individuare il feed "
@@ -285,6 +344,7 @@ def collect(config, now=None):
                     f"{name}: errore HTTP {exc.code} sul feed {url}"
                 )
                 continue
+
             except Exception as exc:
                 problems.append(
                     f"{name}: feed non leggibile "
@@ -295,7 +355,8 @@ def collect(config, now=None):
             if not items:
                 problems.append(
                     f"{name}: XML valido ma nessuna voce trovata "
-                    f"[{url}; Content-Type: {content_type or 'sconosciuto'}]"
+                    f"[{url}; Content-Type: "
+                    f"{content_type or 'sconosciuto'}]"
                 )
                 continue
 
@@ -343,13 +404,13 @@ def json_pronto(candidates):
     return json.dumps(
         [
             {
-                "data": c["data"].strftime("%Y-%m-%d"),
-                "tipo": c["tipo"],
-                "titolo": c["titolo"],
-                "fonte": c["fonte"],
-                "url": c["url"],
+                "data": candidate["data"].strftime("%Y-%m-%d"),
+                "tipo": candidate["tipo"],
+                "titolo": candidate["titolo"],
+                "fonte": candidate["fonte"],
+                "url": candidate["url"],
             }
-            for c in candidates
+            for candidate in candidates
         ],
         ensure_ascii=False,
         indent=2,
@@ -357,7 +418,7 @@ def json_pronto(candidates):
 
 
 def messaggio_telegram(candidates, problems, limite=3800):
-    righe = [
+    lines = [
         f"<b>Norma-Aggiorna</b>: "
         f"{len(candidates)} novita' candidate (da verificare)"
     ]
@@ -372,30 +433,34 @@ def messaggio_telegram(candidates, problems, limite=3800):
                 f"{title}</a>"
             )
 
-        righe.append(
+        lines.append(
             f"- {title} "
             f"<i>({html.escape(candidate['fonte'])}, "
             f"{candidate['data'].strftime('%d/%m')})</i>"
         )
 
     if len(candidates) > 10:
-        righe.append(
+        lines.append(
             f"... e altre {len(candidates) - 10}: "
             "vedi il riepilogo dell'esecuzione su GitHub Actions."
         )
 
     if problems:
-        righe.append("<b>Fonti con problemi</b>:")
-        righe.extend(
+        lines.append("<b>Fonti con problemi</b>:")
+        lines.extend(
             f"- {html.escape(problem)}"
             for problem in problems
         )
 
-    message = "\n".join(righe)
-    return message[:limite]
+    # Evita di tagliare nel mezzo un tag HTML quando possibile.
+    message = "\n".join(lines)
+    if len(message) > limite:
+        message = message[:limite - 20] + "\n… messaggio ridotto"
+
+    return message
 
 
-def invia_telegram(testo):
+def invia_telegram(text):
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 
@@ -407,7 +472,7 @@ def invia_telegram(testo):
         f"https://api.telegram.org/bot{token}/sendMessage",
         data=json.dumps({
             "chat_id": chat_id,
-            "text": testo,
+            "text": text,
             "parse_mode": "HTML",
             "disable_web_page_preview": True,
         }).encode("utf-8"),
@@ -452,8 +517,8 @@ def main():
     if candidates:
         lines.extend([
             "",
-            "Voci candidate per `news.json` "
-            "(verificare prima sulla fonte ufficiale):",
+            "Voci candidate per news.json "
+            "(da verificare sulla fonte ufficiale):",
             "",
             "```json",
             json_pronto(candidates),
