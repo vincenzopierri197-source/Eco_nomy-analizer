@@ -1,196 +1,490 @@
+
 #!/usr/bin/env python3
-"""Raccoglie novita' normative da feed RSS/Atom ufficiali e PROPONE le voci candidate.
-Non modifica news.json e non usa l'AI: filtra solo per parole chiave sui titoli."""
-import html, json, os, re, sys, urllib.request
+"""Raccoglie novita' normative da feed RSS/Atom/RDF ufficiali.
+Propone le voci candidate senza modificare news.json e senza usare AI."""
+
+import html
+import json
+import os
+import re
+import sys
+import urllib.request
+import urllib.error
 import xml.etree.ElementTree as ET
+
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from urllib.parse import urljoin
 
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-UA = "Mozilla/5.0 (compatible; eco-nomy-news/1.0)"
+UA = "Mozilla/5.0 (compatible; eco-nomy-news/1.1)"
 TIMEOUT = 25
 
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={
-        "User-Agent": UA,
-        "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.8"})
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": UA,
+            "Accept": (
+                "application/rss+xml, application/atom+xml, "
+                "application/rdf+xml, application/xml, "
+                "text/xml, text/html;q=0.8"
+            ),
+        },
+    )
+
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-        return r.read(), (r.headers.get_content_charset() or "utf-8")
+        raw = r.read()
+        charset = r.headers.get_content_charset() or "utf-8"
+        content_type = r.headers.get("Content-Type", "")
+        final_url = r.geturl()
+
+    return raw, charset, content_type, final_url
 
 
 class _FeedLinks(HTMLParser):
     def __init__(self, base):
-        super().__init__()
-        self.base, self.links = base, []
+        super().__init__(convert_charrefs=True)
+        self.base = base
+        self.links = []
 
     def handle_starttag(self, tag, attrs):
-        if tag != "link":
+        if tag.lower() != "link":
             return
+
         a = dict(attrs)
-        if (a.get("rel") or "").lower() == "alternate" and (a.get("type") or "").lower() in (
-                "application/rss+xml", "application/atom+xml") and a.get("href"):
-            self.links.append(urljoin(self.base, a["href"]))
+        rel = (a.get("rel") or "").lower().split()
+        typ = (a.get("type") or "").lower().split(";")[0].strip()
+        href = a.get("href")
+
+        if (
+            "alternate" in rel
+            and typ in (
+                "application/rss+xml",
+                "application/atom+xml",
+                "application/rdf+xml",
+                "application/xml",
+                "text/xml",
+            )
+            and href
+        ):
+            self.links.append(urljoin(self.base, href))
 
 
 def discover_feeds(site):
-    body, cs = fetch(site)
-    p = _FeedLinks(site)
-    p.feed(body.decode(cs, errors="replace"))
-    return list(dict.fromkeys(p.links))[:3]
+    raw, charset, _, final_url = fetch(site)
+    text = raw.decode(charset, errors="replace")
+
+    parser = _FeedLinks(final_url)
+    parser.feed(text)
+
+    # Se la pagina stessa è un feed, non serve scoprirne un altro.
+    if looks_like_xml_feed(raw):
+        return [final_url]
+
+    return list(dict.fromkeys(parser.links))[:5]
 
 
-def parse_date(s):
-    if not s:
-        return None
-    s = s.strip()
+def looks_like_xml_feed(raw):
     try:
-        d = parsedate_to_datetime(s)
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        return False
+
+    root_name = root.tag.split("}")[-1].lower()
+    return root_name in ("rss", "feed", "rdf")
+
+
+def parse_date(value):
+    if not value:
+        return None
+
+    value = value.strip()
+
+    try:
+        d = parsedate_to_datetime(value)
     except Exception:
         try:
-            d = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            d = datetime.fromisoformat(
+                value.replace("Z", "+00:00")
+            )
         except Exception:
             return None
+
     if d is None:
         return None
-    return d.astimezone(timezone.utc) if d.tzinfo else d.replace(tzinfo=timezone.utc)
+
+    if d.tzinfo is None:
+        return d.replace(tzinfo=timezone.utc)
+
+    return d.astimezone(timezone.utc)
 
 
-def _t(el):
-    return el.tag.split("}")[-1].lower()
+def tag_name(element):
+    return element.tag.split("}")[-1].lower()
 
 
-def parse_feed(raw):
-    root = ET.fromstring(raw)
-    out = []
-    for it in root.iter():
-        if _t(it) not in ("item", "entry"):
+def parse_feed(raw, base_url=""):
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError as exc:
+        preview = raw[:240].decode("utf-8", errors="replace")
+        raise ValueError(
+            f"XML non valido ({exc}); risposta iniziale: {preview!r}"
+        ) from exc
+
+    root_name = tag_name(root)
+
+    if root_name not in ("rss", "feed", "rdf", "rdf:rdf"):
+        # Per i namespace XML, tag_name rimuove già il namespace.
+        if not any(
+            tag_name(el) in ("item", "entry")
+            for el in root.iter()
+        ):
+            raise ValueError(
+                f"Formato XML non riconosciuto: elemento radice {root_name!r}"
+            )
+
+    entries = []
+    for element in root.iter():
+        if tag_name(element) not in ("item", "entry"):
             continue
-        f = {"titolo": "", "link": "", "data": None, "testo": ""}
-        for c in it:
-            n = _t(c)
-            if n == "title":
-                f["titolo"] = (c.text or "").strip()
-            elif n == "link":
-                f["link"] = (c.get("href") or c.text or "").strip() or f["link"]
-            elif n in ("pubdate", "published", "updated", "date") and not f["data"]:
-                f["data"] = parse_date(c.text)
-            elif n in ("description", "summary") and not f["testo"]:
-                f["testo"] = re.sub(r"<[^>]+>", " ", html.unescape(c.text or ""))
-        if f["titolo"]:
-            out.append(f)
-    return out
+
+        item = {
+            "titolo": "",
+            "link": "",
+            "data": None,
+            "testo": "",
+        }
+
+        # In RDF il link può essere nell'attributo rdf:about.
+        for key, value in element.attrib.items():
+            if key.split("}")[-1].lower() == "about" and value:
+                item["link"] = urljoin(base_url, value)
+                break
+
+        for child in element:
+            name = tag_name(child)
+            value = "".join(child.itertext()).strip()
+
+            if name == "title" and not item["titolo"]:
+                item["titolo"] = value
+
+            elif name == "link":
+                href = child.get("href")
+                rel = (child.get("rel") or "alternate").lower()
+                link_value = (href or value).strip()
+
+                if link_value and (
+                    rel == "alternate" or not item["link"]
+                ):
+                    item["link"] = urljoin(base_url, link_value)
+
+            elif name in (
+                "pubdate", "published", "updated", "date",
+                "created", "issued"
+            ) and not item["data"]:
+                item["data"] = parse_date(value)
+
+            elif name in (
+                "description", "summary", "encoded", "content"
+            ) and not item["testo"]:
+                item["testo"] = re.sub(
+                    r"\s+",
+                    " ",
+                    re.sub(
+                        r"<[^>]+>",
+                        " ",
+                        html.unescape(value),
+                    ),
+                ).strip()
+
+        if item["titolo"]:
+            entries.append(item)
+
+    return entries
 
 
-def safe_url(u):
-    return u if re.match(r"^https?://", u or "") else ""
+def safe_url(url):
+    if not url:
+        return ""
+
+    url = url.strip()
+    if url.startswith(("http://", "https://")):
+        return url
+
+    return ""
 
 
-def collect(cfg, now=None):
+def collect(config, now=None):
     now = now or datetime.now(timezone.utc)
-    limite = now - timedelta(hours=cfg.get("finestra_ore", 30))
-    kw = re.compile(r"\b(?:" + "|".join(cfg["parole_chiave"]) + ")", re.I)
-    cand, problemi, note = [], [], []
-    for fonte in cfg["fonti"]:
-        nome, urls = fonte["nome"], []
+    limite = now - timedelta(
+        hours=config.get("finestra_ore", 30)
+    )
+
+    keywords = config.get("parole_chiave", [])
+    regex = re.compile(
+        r"\b(?:" + "|".join(keywords) + ")",
+        re.IGNORECASE,
+    )
+
+    candidates = []
+    problems = []
+    notes = []
+
+    for source in config.get("fonti", []):
+        name = source.get("nome", "Fonte senza nome")
+        urls = []
+
         try:
-            if fonte.get("url"):
-                urls = [fonte["url"]]
-            else:
-                urls = discover_feeds(fonte["sito"])
+            if source.get("url"):
+                urls = [source["url"]]
+            elif source.get("sito"):
+                urls = discover_feeds(source["sito"])
+
                 if urls:
-                    note.append(f"{nome}: feed trovato automaticamente -> {', '.join(urls)} (scrivilo in news-config.json come \"url\")")
+                    notes.append(
+                        f"{name}: feed individuato -> "
+                        f"{', '.join(urls)}. Inseriscilo come 'url' "
+                        "nel file news-config.json."
+                    )
                 else:
-                    problemi.append(f"{nome}: nessun feed trovato sul sito; cerca l'icona RSS e inserisci l'indirizzo in news-config.json")
+                    problems.append(
+                        f"{name}: nessun feed RSS/Atom trovato "
+                        "nei link dichiarati della pagina."
+                    )
                     continue
-        except Exception as e:
-            problemi.append(f"{nome}: sito non raggiungibile ({type(e).__name__})")
-            continue
-        ok = False
-        for u in urls:
-            try:
-                raw, _ = fetch(u)
-                items = parse_feed(raw)
-                ok = True
-            except Exception as e:
-                problemi.append(f"{nome}: feed non leggibile ({type(e).__name__}) {u}")
+            else:
+                problems.append(
+                    f"{name}: manca sia 'url' sia 'sito' nel config."
+                )
                 continue
-            for it in items:
-                if not it["data"] or it["data"] < limite:
+
+        except urllib.error.HTTPError as exc:
+            problems.append(
+                f"{name}: errore HTTP {exc.code} durante il recupero."
+            )
+            continue
+        except Exception as exc:
+            problems.append(
+                f"{name}: impossibile individuare il feed "
+                f"({type(exc).__name__}: {exc})."
+            )
+            continue
+
+        for url in urls:
+            try:
+                raw, charset, content_type, final_url = fetch(url)
+                items = parse_feed(raw, final_url)
+
+            except urllib.error.HTTPError as exc:
+                problems.append(
+                    f"{name}: errore HTTP {exc.code} sul feed {url}"
+                )
+                continue
+            except Exception as exc:
+                problems.append(
+                    f"{name}: feed non leggibile "
+                    f"({type(exc).__name__}: {exc}) [{url}]"
+                )
+                continue
+
+            if not items:
+                problems.append(
+                    f"{name}: XML valido ma nessuna voce trovata "
+                    f"[{url}; Content-Type: {content_type or 'sconosciuto'}]"
+                )
+                continue
+
+            for item in items:
+                date = item["data"]
+
+                if not date or date < limite:
                     continue
-                if kw.search(it["titolo"] + " " + it["testo"]):
-                    cand.append({"fonte": nome, "tipo": fonte.get("tipo", "Notizia"),
-                                 "titolo": it["titolo"][:200], "url": safe_url(it["link"]), "data": it["data"]})
-        if not ok and urls:
-            pass
-    visti, unici = set(), []
-    for c in sorted(cand, key=lambda x: x["data"], reverse=True):
-        k = c["url"] or c["titolo"]
-        if k not in visti:
-            visti.add(k)
-            unici.append(c)
-    return unici[: cfg.get("max_voci", 40)], problemi, note
+
+                searchable = item["titolo"] + " " + item["testo"]
+
+                if regex.search(searchable):
+                    candidates.append({
+                        "fonte": name,
+                        "tipo": source.get("tipo", "Notizia"),
+                        "titolo": item["titolo"][:200],
+                        "url": safe_url(
+                            urljoin(final_url, item["link"])
+                        ),
+                        "data": date,
+                    })
+
+    seen = set()
+    unique = []
+
+    for candidate in sorted(
+        candidates,
+        key=lambda entry: entry["data"],
+        reverse=True,
+    ):
+        key = candidate["url"] or candidate["titolo"]
+
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+
+    return (
+        unique[:config.get("max_voci", 40)],
+        problems,
+        notes,
+    )
 
 
-def json_pronto(cands):
-    return json.dumps([{"data": c["data"].strftime("%Y-%m-%d"), "tipo": c["tipo"], "titolo": c["titolo"],
-                        "fonte": c["fonte"], "url": c["url"]} for c in cands], ensure_ascii=False, indent=2)
+def json_pronto(candidates):
+    return json.dumps(
+        [
+            {
+                "data": c["data"].strftime("%Y-%m-%d"),
+                "tipo": c["tipo"],
+                "titolo": c["titolo"],
+                "fonte": c["fonte"],
+                "url": c["url"],
+            }
+            for c in candidates
+        ],
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
-def messaggio_telegram(cands, problemi, limite=3800):
-    righe = [f"<b>Norma-Aggiorna</b>: {len(cands)} novita' candidate (da verificare)"]
-    for c in cands[:10]:
-        t = html.escape(c["titolo"][:140])
-        link = f'<a href="{html.escape(c["url"], quote=True)}">{t}</a>' if c["url"] else t
-        righe.append(f"- {link} <i>({html.escape(c['fonte'])}, {c['data'].strftime('%d/%m')})</i>")
-    if len(cands) > 10:
-        righe.append(f"... e altre {len(cands) - 10}: vedi il riepilogo dell'esecuzione su GitHub (Actions).")
-    if problemi:
+def messaggio_telegram(candidates, problems, limite=3800):
+    righe = [
+        f"<b>Norma-Aggiorna</b>: "
+        f"{len(candidates)} novita' candidate (da verificare)"
+    ]
+
+    for candidate in candidates[:10]:
+        title = html.escape(candidate["titolo"][:140])
+        url = candidate["url"]
+
+        if url:
+            title = (
+                f'<a href="{html.escape(url, quote=True)}">'
+                f"{title}</a>"
+            )
+
+        righe.append(
+            f"- {title} "
+            f"<i>({html.escape(candidate['fonte'])}, "
+            f"{candidate['data'].strftime('%d/%m')})</i>"
+        )
+
+    if len(candidates) > 10:
+        righe.append(
+            f"... e altre {len(candidates) - 10}: "
+            "vedi il riepilogo dell'esecuzione su GitHub Actions."
+        )
+
+    if problems:
         righe.append("<b>Fonti con problemi</b>:")
-        righe += [f"- {html.escape(p)}" for p in problemi]
-    return "\n".join(righe)[:limite]
+        righe.extend(
+            f"- {html.escape(problem)}"
+            for problem in problems
+        )
+
+    message = "\n".join(righe)
+    return message[:limite]
 
 
 def invia_telegram(testo):
-    tok, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
-    if not tok or not chat:
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+
+    if not token or not chat_id:
         print("Telegram non configurato: salto la notifica.")
         return
-    req = urllib.request.Request(f"https://api.telegram.org/bot{tok}/sendMessage",
-                                 data=json.dumps({"chat_id": chat, "text": testo, "parse_mode": "HTML",
-                                                  "disable_web_page_preview": True}).encode(),
-                                 headers={"Content-Type": "application/json"})
+
+    request = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=json.dumps({
+            "chat_id": chat_id,
+            "text": testo,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+        }).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+
     try:
-        urllib.request.urlopen(req, timeout=TIMEOUT).read()
+        with urllib.request.urlopen(
+            request, timeout=TIMEOUT
+        ) as response:
+            response.read()
+
         print("Notifica Telegram inviata.")
-    except Exception as e:
-        print(f"::warning::Notifica Telegram non riuscita ({type(e).__name__})")
+
+    except Exception as exc:
+        print(
+            "::warning::Notifica Telegram non riuscita "
+            f"({type(exc).__name__}: {exc})"
+        )
 
 
 def main():
-    cfg = json.load(open(os.path.join(HERE, "news-config.json"), encoding="utf-8"))
-    cands, problemi, note = collect(cfg)
-    md = [f"## Norma-Aggiorna: {len(cands)} novita' candidate\n"]
-    for c in cands:
-        md.append(f"- **{c['data'].strftime('%d/%m/%Y')}** [{c['fonte']}] {c['titolo']} - {c['url'] or 'senza link'}")
-    if cands:
-        md += ["\nVoci pronte da incollare in `news.json` (dopo verifica sulla fonte ufficiale):\n", "```json", json_pronto(cands), "```"]
-    if note:
-        md += ["\n### Note\n"] + [f"- {n}" for n in note]
-    if problemi:
-        md += ["\n### Fonti con problemi\n"] + [f"- {p}" for p in problemi]
-    testo = "\n".join(md)
-    print(testo)
-    if os.environ.get("GITHUB_STEP_SUMMARY"):
-        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-            f.write(testo + "\n")
-    for p in problemi:
-        print(f"::warning::{p}")
-    if cands or problemi:
-        invia_telegram(messaggio_telegram(cands, problemi))
-    if len(problemi) >= len(cfg["fonti"]):
+    config_path = os.path.join(HERE, "news-config.json")
+
+    with open(config_path, encoding="utf-8") as file:
+        config = json.load(file)
+
+    candidates, problems, notes = collect(config)
+
+    lines = [
+        f"## Norma-Aggiorna: {len(candidates)} novita' candidate",
+        "",
+    ]
+
+    for candidate in candidates:
+        lines.append(
+            f"- **{candidate['data'].strftime('%d/%m/%Y')}** "
+            f"[{candidate['fonte']}] {candidate['titolo']} - "
+            f"{candidate['url'] or 'senza link'}"
+        )
+
+    if candidates:
+        lines.extend([
+            "",
+            "Voci candidate per `news.json` "
+            "(verificare prima sulla fonte ufficiale):",
+            "",
+            "```json",
+            json_pronto(candidates),
+            "```",
+        ])
+
+    if notes:
+        lines.extend(["", "### Note", ""])
+        lines.extend(f"- {note}" for note in notes)
+
+    if problems:
+        lines.extend(["", "### Fonti con problemi", ""])
+        lines.extend(f"- {problem}" for problem in problems)
+
+    report = "\n".join(lines)
+    print(report)
+
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with open(summary_path, "a", encoding="utf-8") as file:
+            file.write(report + "\n")
+
+    for problem in problems:
+        print(f"::warning::{problem}")
+
+    if candidates or problems:
+        invia_telegram(
+            messaggio_telegram(candidates, problems)
+        )
+
+    if len(problems) >= len(config.get("fonti", [])):
         sys.exit("Nessuna fonte ha funzionato.")
 
 
