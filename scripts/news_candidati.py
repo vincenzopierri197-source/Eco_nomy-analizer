@@ -350,7 +350,7 @@ def collect(config, now=None):
                 problems.append(
                     f"{name}: feed non leggibile "
                     f"({type(exc).__name__}: {exc}) [{url}]"
-                    f"\\nDettaglio tecnico: {traceback_text.strip()}"
+                    f"\nDettaglio tecnico: {traceback_text.strip()}"
                 )
                 continue
 
