@@ -14,11 +14,14 @@ Comandi:
   /pubblica                     avvia la pubblicazione su GitHub Pages
   /manutenzione on|off          attiva/disattiva la pagina di manutenzione
   /manutenzione                 mostra lo stato attuale
+  /news tipo | titolo | fonte | link   aggiunge una notizia a Norma-Aggiorna
+  /news                         elenca le notizie; /news elimina N le rimuove
   file o foto                   caricati in uploads/
 """
 import base64
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -34,6 +37,8 @@ BRANCH = os.environ.get("BRANCH", "main")
 PUBLISH_WORKFLOW = os.environ.get("PUBLISH_WORKFLOW", "Pubblica eco-nomy su GitHub Pages")
 MAINT_WORKFLOW = os.environ.get("MAINT_WORKFLOW", "Gestione manutenzione ECO-NOMY")
 MAX_UPLOAD = 20 * 1024 * 1024  # limite dei bot Telegram
+NEWS_FILE = "news.json"
+NEWS_MAX = 50
 
 HELP = (
     "Comandi:\n"
@@ -43,8 +48,19 @@ HELP = (
     "/ultimi\n"
     "/pubblica\n"
     "/manutenzione on|off\n"
+    "/news tipo | titolo | fonte | link\n"
+    "/news (elenco) · /news elimina N\n"
     "Oppure mandami un file o una foto: li carico in uploads/."
 )
+
+
+def now():
+    """Data e ora italiane (il runner di GitHub lavora in UTC)."""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Europe/Rome"))
+    except Exception:  # noqa: BLE001
+        return datetime.now()
 
 
 def http(method, url, headers=None, data=None, raw=False):
@@ -130,7 +146,7 @@ def cmd_issue(arg, msg):
 def cmd_nota(arg, msg):
     if not arg:
         return reply("Uso: /nota testo")
-    line = f"- {datetime.now():%Y-%m-%d %H:%M} — {arg}\n"
+    line = f"- {now():%Y-%m-%d %H:%M} — {arg}\n"
     st, res = put_file("NOTE.md", line.encode(), "Nuova nota da Telegram", append=True)
     reply("✅ Nota salvata in NOTE.md" if st in (200, 201) else err(st, res))
 
@@ -205,6 +221,132 @@ def cmd_manutenzione(arg, msg):
         reply(err(st, res))
 
 
+def read_news():
+    """Ritorna (status, dati, sha). Se il file non esiste ancora, parte da un elenco vuoto."""
+    st, cur = gh("GET", "/contents/" + NEWS_FILE, params={"ref": BRANCH})
+    if st == 404:
+        return 404, {"aggiornato": "", "voci": []}, None
+    if st != 200 or not isinstance(cur, dict):
+        return st, cur, None
+    try:
+        data = json.loads(base64.b64decode(cur["content"]).decode("utf-8"))
+    except (ValueError, KeyError):
+        return 422, {"message": "news.json non è un JSON valido: non lo tocco"}, None
+    if not isinstance(data, dict) or not isinstance(data.get("voci"), list):
+        return 422, {"message": "news.json non ha l'elenco \"voci\": non lo tocco"}, None
+    return 200, data, cur["sha"]
+
+
+def news_order(voci):
+    """Indici ordinati dalla notizia più recente (stesso ordine mostrato sul sito)."""
+    return sorted(range(len(voci)), key=lambda i: str(voci[i].get("data", "")), reverse=True)
+
+
+def edit_news(mutate, message):
+    """Legge news.json, applica mutate(dati) -> (ok, testo) e salva. Riprova se c'è un conflitto."""
+    for attempt in range(3):
+        st, data, sha = read_news()
+        if st not in (200, 404):
+            return False, err(st, data)
+        ok, text = mutate(data)
+        if not ok:
+            return False, text
+        body = {
+            "message": message,
+            "branch": BRANCH,
+            "content": base64.b64encode((json.dumps(data, ensure_ascii=False, indent=2) + "\n").encode()).decode(),
+        }
+        if sha:
+            body["sha"] = sha
+        st, res = gh("PUT", "/contents/" + NEWS_FILE, data=body)
+        if st in (200, 201):
+            return True, text
+        if st not in (409, 422) or attempt == 2:
+            return False, err(st, res)
+        time.sleep(2)
+
+
+def publish_after():
+    """I commit fatti con il token del workflow non avviano la pubblicazione: la avvio io."""
+    wf, problem = find_workflow(PUBLISH_WORKFLOW)
+    if not problem:
+        st, _ = dispatch(wf)
+        if st == 204:
+            return reply("🚀 Pubblicazione avviata: tra circa un minuto la modifica è sul sito.")
+    reply("⚠️ Modifica salvata, ma non sono riuscito ad avviare la pubblicazione: usa /pubblica.")
+
+
+def news_list():
+    st, data, _ = read_news()
+    if st not in (200, 404):
+        return reply(err(st, data))
+    voci = data["voci"]
+    if not voci:
+        return reply("Nessuna notizia in news.json. Aggiungine una con:\n/news tipo | titolo | fonte | link")
+    lines = []
+    for n, i in enumerate(news_order(voci)[:10], 1):
+        v = voci[i]
+        lines.append(f"{n}) [{v.get('tipo', '')}] {v.get('titolo', '')} ({v.get('data', '')})")
+    extra = f"\n… e altre {len(voci) - 10}" if len(voci) > 10 else ""
+    reply("Notizie sul sito:\n" + "\n".join(lines) + extra)
+
+
+def news_add(arg):
+    parts = [p.strip() for p in arg.split("|")]
+    if len(parts) > 4:
+        return reply("Troppi campi. Uso: /news tipo | titolo | fonte | link")
+    if len(parts) == 1:
+        tipo, titolo, fonte, url = "Notizia", parts[0], "", ""
+    else:
+        tipo, titolo, fonte, url = (parts + ["", ""])[:4]
+    if not titolo:
+        return reply("Manca il titolo. Uso: /news tipo | titolo | fonte | link")
+    if url and not re.match(r"https?://", url, re.I):
+        return reply("❌ Il link deve iniziare con http:// o https://")
+    today = now().strftime("%Y-%m-%d")
+    entry = {"data": today, "tipo": tipo[:30] or "Notizia", "titolo": titolo[:300], "fonte": fonte[:80], "url": url}
+
+    def mutate(data):
+        data["voci"].insert(0, entry)
+        data["voci"] = [data["voci"][i] for i in news_order(data["voci"])][:NEWS_MAX]
+        data["aggiornato"] = today
+        return True, f"✅ Notizia aggiunta ({len(data['voci'])} in elenco): {entry['titolo']}"
+
+    ok, text = edit_news(mutate, "Nuova notizia da Telegram")
+    reply(text)
+    if ok:
+        publish_after()
+
+
+def news_delete(arg):
+    try:
+        n = int(arg.strip())
+    except ValueError:
+        return reply("Uso: /news elimina NUMERO (il numero lo vedi con /news)")
+
+    def mutate(data):
+        voci = data["voci"]
+        order = news_order(voci)
+        if not 1 <= n <= len(order):
+            return False, f"❌ Numero non valido: in elenco ci sono {len(order)} notizie."
+        removed = voci.pop(order[n - 1])
+        return True, f"🗑️ Eliminata: {removed.get('titolo', '')}"
+
+    ok, text = edit_news(mutate, "Notizia rimossa da Telegram")
+    reply(text)
+    if ok:
+        publish_after()
+
+
+def cmd_news(arg, msg):
+    words = arg.split(None, 1)
+    if not words or words[0].lower() in ("lista", "elenco"):
+        return news_list()
+    if words[0].lower() in ("elimina", "rimuovi", "del"):
+        return news_delete(words[1] if len(words) > 1 else "")
+    return news_add(arg)
+
+
 def upload(msg):
     if "document" in msg:
         d = msg["document"]
@@ -213,7 +355,7 @@ def upload(msg):
     else:
         p = msg["photo"][-1]
         file_id, size = p["file_id"], p.get("file_size", 0)
-        name = f"foto_{datetime.now():%Y%m%d_%H%M%S}.jpg"
+        name = f"foto_{now():%Y%m%d_%H%M%S}.jpg"
     if size > MAX_UPLOAD:
         return reply("❌ File troppo grande (massimo 20 MB).")
     name = name.replace("/", "_").replace("\\", "_").lstrip(".") or "file"
@@ -230,6 +372,7 @@ def upload(msg):
 COMMANDS = {
     "/issue": cmd_issue, "/nota": cmd_nota, "/issues": cmd_issues,
     "/ultimi": cmd_ultimi, "/pubblica": cmd_pubblica, "/manutenzione": cmd_manutenzione,
+    "/news": cmd_news,
 }
 
 
