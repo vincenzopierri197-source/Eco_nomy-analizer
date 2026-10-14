@@ -43,7 +43,8 @@ jobs:
           for i, v in enumerate(d['voci'], 1):
               assert v.get('titolo'), f"voce {i}: manca 'titolo'"
               assert data_ok(v.get('data')), f"voce {i}: 'data' non valida (usa AAAA-MM-GG)"
-              assert v.get('tipo') in ('Riforma', 'Prassi', 'Notizia'), f"voce {i}: 'tipo' deve essere Riforma, Prassi o Notizia"
+              if v.get('tipo') not in ('Riforma', 'Prassi', 'Notizia'):
+                  print(f"::warning::voce {i}: 'tipo' e' '{v.get('tipo')}' invece di Riforma, Prassi o Notizia: sul sito comparira' come Notizia")
               u = v.get('url', '')
               assert not u or u.startswith(('http://', 'https://')), f"voce {i}: 'url' deve iniziare con http:// o https://"
           print('news.json valido:', len(d['voci']), 'voci')
