@@ -179,18 +179,18 @@ class _NewsHTMLParser(HTMLParser):
     def handle_endtag(self, tag):
         tag = tag.lower()
         if tag in ("h1", "h2", "h3", "h4", "h5", "h6") and self.in_heading:
-            title = re.sub(r"\\s+", " ", "".join(self.heading)).strip()
+            title = re.sub(r"\s+", " ", "".join(self.heading)).strip()
             if title and title.lower() not in ("archivio news", "archivio novità"):
                 self.events.append(("heading", title, ""))
             self.in_heading = False
         if tag == "a" and self.in_anchor:
-            label = re.sub(r"\\s+", " ", "".join(self.anchor)).strip()
+            label = re.sub(r"\s+", " ", "".join(self.anchor)).strip()
             if self.anchor_href:
                 self.events.append(("link", label, urljoin(self.base_url, self.anchor_href)))
             self.in_anchor = False
 
     def handle_data(self, data):
-        text = re.sub(r"\\s+", " ", data).strip()
+        text = re.sub(r"\s+", " ", data).strip()
         if not text:
             return
         self.text_parts.append(text)
@@ -198,7 +198,7 @@ class _NewsHTMLParser(HTMLParser):
             self.heading.append(data)
         if self.in_anchor:
             self.anchor.append(data)
-        date_match = re.search(r"\\b(\\d{1,2})\\s+([A-Za-zÀ-ÿ]+)\\s+(\\d{4})\\b", text)
+        date_match = re.search(r"\b(\d{1,2})\s+([A-Za-zÀ-ÿ]+)\s+(\d{4})\b", text)
         if date_match:
             self.events.append(("date", date_match.group(0), ""))
 
@@ -238,7 +238,7 @@ def parse_date(value):
         "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12,
     }
     match = re.search(
-        r"\\b(\\d{1,2})\\s+([A-Za-zÀ-ÿ]+)\\s+(\\d{4})\\b",
+        r"\b(\d{1,2})\s+([A-Za-zÀ-ÿ]+)\s+(\d{4})\b",
         value,
         flags=re.IGNORECASE,
     )
