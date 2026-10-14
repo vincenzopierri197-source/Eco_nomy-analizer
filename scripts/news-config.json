@@ -9,13 +9,13 @@
       "tipo": "Notizia"
     },
     {
-      "nome": "Senato - Disegni di legge",
-      "url": "https://www.senato.it/static/bgt/UltimiAtti/feedDDL.xml",
+      "nome": "Senato della Repubblica",
+      "sito": "https://www.senato.it/leggi-e-documenti",
       "tipo": "Notizia"
     },
     {
       "nome": "Camera - Disegni di legge annunciati",
-      "url": "https://documenti.camera.it/apps/rssFeeds/ultimiPDL/pdlUltimiAnnunciati.asp?idLegislatura=18",
+      "url": "https://documenti.camera.it/apps/rssFeeds/ultimiPDL/pdlUltimiAnnunciati.asp?idLegislatura=19",
       "tipo": "Notizia"
     },
     {
@@ -34,13 +34,13 @@
       "tipo": "Notizia"
     },
     {
-      "nome": "Normattiva",
+      "nome": "Normattiva - Archivio novità",
       "sito": "https://www.normattiva.it/showArchivioNews",
       "tipo": "Notizia"
     },
     {
       "nome": "Governo italiano",
-      "sito": "http://www.governo.it/feed/rss",
+      "sito": "https://www.governo.it/",
       "tipo": "Notizia"
     }
   ],
