@@ -9,22 +9,22 @@
     },
     {
       "nome": "Normattiva",
-      "sito": "https://www.normattiva.it/",
+      "sito": "https://www.normattiva.it/showArchivioNews",
       "tipo": "Notizia"
     },
     {
       "nome": "Senato della Repubblica",
-      "sito": "https://www.senato.it/",
+      "sito": "https://www.senato.it/leg17/3303?testo_generico=807",
       "tipo": "Notizia"
     },
     {
       "nome": "Governo italiano",
-      "sito": "https://www.governo.it/",
+      "sito": "http://www.governo.it/feed/rss",
       "tipo": "Notizia"
     },
     {
       "nome": "EUR-Lex",
-      "sito": "https://eur-lex.europa.eu/",
+      "sito": "https://eur-lex.europa.eu/content/help/search/predefined-rss.html",
       "tipo": "Notizia"
     }
   ],
