@@ -231,15 +231,37 @@ def parse_date(value):
 
     value = value.strip()
 
-    try:
-        date = parsedate_to_datetime(value)
-    except Exception:
+    # Le pagine istituzionali italiane spesso mostrano date come "25 settembre 2026".
+    italian_months = {
+        "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
+        "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8,
+        "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12,
+    }
+    match = re.search(
+        r"\\b(\\d{1,2})\\s+([A-Za-zÀ-ÿ]+)\\s+(\\d{4})\\b",
+        value,
+        flags=re.IGNORECASE,
+    )
+    if match and match.group(2).lower() in italian_months:
         try:
-            date = datetime.fromisoformat(
-                value.replace("Z", "+00:00")
+            date = datetime(
+                int(match.group(3)),
+                italian_months[match.group(2).lower()],
+                int(match.group(1)),
+                tzinfo=timezone.utc,
             )
-        except Exception:
+        except ValueError:
             return None
+    else:
+        try:
+            date = parsedate_to_datetime(value)
+        except Exception:
+            try:
+                date = datetime.fromisoformat(
+                    value.replace("Z", "+00:00")
+                )
+            except Exception:
+                return None
 
     if date is None:
         return None
