@@ -1,4 +1,3 @@
-
 {
   "finestra_ore": 30,
   "max_voci": 40,
@@ -9,8 +8,8 @@
       "tipo": "Notizia"
     },
     {
-      "nome": "Senato della Repubblica",
-      "sito": "https://www.senato.it/leggi-e-documenti",
+      "nome": "Senato della Repubblica - Disegni di legge presentati",
+      "url": "https://www.senato.it/static/bgt/UltimiAtti/feedDDL.xml",
       "tipo": "Notizia"
     },
     {
@@ -40,7 +39,7 @@
     },
     {
       "nome": "Governo italiano",
-      "sito": "https://www.governo.it/",
+      "url": "https://www.governo.it/it/rss.xml",
       "tipo": "Notizia"
     }
   ],
