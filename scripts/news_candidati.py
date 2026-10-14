@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlencode
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -355,6 +355,51 @@ def parse_feed(raw, base_url=""):
     return entries
 
 
+
+def fetch_senato_sparql(endpoint, limite):
+    """Legge i DDL recenti dai linked open data ufficiali del Senato."""
+    dal = limite.strftime("%Y-%m-%d")
+    query = """PREFIX osr: <http://dati.senato.it/osr/>
+SELECT DISTINCT ?ddl ?titolo ?dataPresentazione ?ramo ?presentatoTrasmesso
+WHERE {
+  ?ddl a osr:Ddl ;
+       osr:legislatura 19 ;
+       osr:titolo ?titolo ;
+       osr:dataPresentazione ?dataPresentazione ;
+       osr:ramo ?ramo ;
+       osr:presentatoTrasmesso ?presentatoTrasmesso .
+  FILTER(str(?dataPresentazione) >= "DATALIMITE")
+  FILTER(?ramo = "S")
+  FILTER(?presentatoTrasmesso = "presentato")
+}
+ORDER BY DESC(?dataPresentazione)
+LIMIT 200
+"""
+    query = query.replace("DATALIMITE", dal)
+    url = endpoint + "?" + urlencode({
+        "query": query,
+        "format": "application/sparql-results+json",
+    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": UA,
+            "Accept": "application/sparql-results+json, application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    bindings = payload.get("results", {}).get("bindings", [])
+    entries = []
+    for row in bindings:
+        title = row.get("titolo", {}).get("value", "").strip()
+        date_text = row.get("dataPresentazione", {}).get("value", "")
+        link = row.get("ddl", {}).get("value", "")
+        date = parse_date(date_text)
+        if title and date:
+            entries.append({"titolo": title, "link": link, "data": date, "testo": ""})
+    return entries
+
 def safe_url(url):
     if not url:
         return ""
@@ -389,6 +434,23 @@ def collect(config, now=None):
         urls = []
 
         try:
+            if source.get("sparql"):
+                items = fetch_senato_sparql(source["sparql"], limite)
+                for item in items:
+                    date = item["data"]
+                    if not date or date < limite:
+                        continue
+                    searchable = item["titolo"] + " " + item["testo"]
+                    if regex.search(searchable):
+                        candidates.append({
+                            "fonte": name,
+                            "tipo": source.get("tipo", "Notizia"),
+                            "titolo": item["titolo"][:200],
+                            "url": safe_url(item["link"]),
+                            "data": date,
+                        })
+                continue
+
             if source.get("url"):
                 urls = [source["url"]]
 
