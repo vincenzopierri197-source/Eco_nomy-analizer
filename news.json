@@ -1,0 +1,19 @@
+{
+  "aggiornato": "2026-10-14",
+  "voci": [
+    {
+      "data": "2026-10-14",
+      "tipo": "Esempio",
+      "titolo": "Voce di esempio: qui comparirà il titolo della riforma o della notizia",
+      "fonte": "Indica qui la fonte reale",
+      "url": ""
+    },
+    {
+      "data": "2026-10-13",
+      "tipo": "Esempio",
+      "titolo": "Per aggiornare l’elenco modifica il file news.json nel repository",
+      "fonte": "Sostituisci queste voci di esempio con notizie verificate",
+      "url": ""
+    }
+  ]
+}
