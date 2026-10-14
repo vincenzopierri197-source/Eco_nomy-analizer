@@ -103,56 +103,56 @@ def looks_like_xml_feed(raw):
 
 
 def normalize_xml_encoding(raw):
-    """Corregge dichiarazioni XML incoerenti senza alterare i dati.
+    """Restituisce sempre bytes e corregge solo XML UTF-16 dichiarati male."""
+    # Tutte le operazioni successive lavorano esclusivamente su bytes.
+    if isinstance(raw, str):
+        raw = raw.encode("utf-8")
+    elif isinstance(raw, bytearray):
+        raw = bytes(raw)
+    elif not isinstance(raw, bytes):
+        raise TypeError(
+            f"Contenuto XML non supportato: {type(raw).__name__}"
+        )
 
-    ElementTree deve ricevere i byte originali per rilevare correttamente
-    UTF-8, UTF-16 e UTF-32. Se la dichiarazione dice UTF-16 ma il contenuto
-    e' ASCII/UTF-8 senza BOM e senza il pattern UTF-16, corregge la sola
-    dichiarazione.
-    """
-    has_bom = raw.startswith((
-        b"\xff\xfe",
-        b"\xfe\xff",
-        b"\x00\x00\xfe\xff",
-        b"\xff\xfe\x00\x00",
-    ))
-
-    has_utf16_pattern = (
-        raw.startswith(b"\x00<")
-        or raw.startswith(b"<\x00")
-        or raw.startswith(b"\x00\x00<\x00")
-        or raw.startswith(b"<\x00\x00\x00")
-    )
-
-    if has_bom or has_utf16_pattern:
+    if not raw:
         return raw
 
-    # La dichiarazione XML e' ASCII per definizione.
-    # Correggiamo solo il nome della codifica dichiarata.
+    # Un BOM o una struttura UTF-16/UTF-32 reale non va alterata.
+    if raw.startswith((
+        b"\\xff\\xfe", b"\\xfe\\xff",
+        b"\\x00\\x00\\xfe\\xff", b"\\xff\\xfe\\x00\\x00",
+    )):
+        return raw
+
+    if (
+        raw.startswith(b"\\x00<")
+        or raw.startswith(b"<\\x00")
+        or raw.startswith(b"\\x00\\x00<\\x00")
+        or raw.startswith(b"<\\x00\\x00\\x00")
+    ):
+        return raw
+
+    # Cerca una dichiarazione XML nei primi byte ASCII.
     declaration = re.match(
-        rb"(\s*<\?xml\b[^?]*\bencoding\s*=\s*)(['\"])([^'\"]+)(['\"])",
+        rb"""(\\s*<\\?xml\\b[^?]*?\\bencoding\\s*=\\s*)(['"])([^'"]+)(['"])""",
         raw[:300],
         flags=re.IGNORECASE,
     )
-
     if not declaration:
         return raw
 
-    declared = declaration.group(3).lower().replace("_", "-")
-
-    # Se il documento dichiara UTF-16 ma non ha BOM o struttura UTF-16,
-    # puo' essere un feed malformato con contenuto ASCII/UTF-8.
-    if declared in ("utf-16", "utf-16le", "utf-16be"):
+    declared = declaration.group(3).lower().replace(b"_", b"-")
+    if declared in (b"utf-16", b"utf-16le", b"utf-16be"):
+        # Sostituzione interamente bytes: evita il TypeError str/bytes.
         raw = re.sub(
-            rb"(\bencoding\s*=\s*)(['\"])[^'\"]+(['\"])",
-            rb"\1\2UTF-8\3",
+            rb"""(\\bencoding\\s*=\\s*)(['"])[^'"]+(['"])""",
+            rb"\\1\\2UTF-8\\3",
             raw,
             count=1,
             flags=re.IGNORECASE,
         )
 
     return raw
-
 
 def parse_date(value):
     if not value:
