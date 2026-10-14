@@ -75,6 +75,7 @@ jobs:
               --exclude='.gitignore' \
               --exclude='README.md' \
               --exclude='firebase/' \
+              --exclude='scripts/' \
               --exclude='*.py' \
               --exclude='requirements*.txt' \
               ./ _site/

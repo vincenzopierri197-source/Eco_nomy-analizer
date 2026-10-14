@@ -1,0 +1,23 @@
+name: Raccogli novita normative (candidate)
+
+on:
+  schedule:
+    - cron: '30 5 * * 1-6'   # dal lunedi al sabato, 05:30 UTC (06:30 o 07:30 in Italia)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  raccogli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Recupera i file
+        uses: actions/checkout@v6
+
+      - name: Raccogli le novita
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 scripts/news_candidati.py
