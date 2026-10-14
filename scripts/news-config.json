@@ -8,8 +8,8 @@
       "tipo": "Notizia"
     },
     {
-      "nome": "Senato della Repubblica - Disegni di legge presentati",
-      "url": "https://www.senato.it/static/bgt/UltimiAtti/feedDDL.xml",
+      "nome": "Senato della Repubblica - Disegni di legge",
+      "sito": "https://www.senato.it/leggi-e-documenti/disegni-di-legge/i-ddl-piu-richiesti",
       "tipo": "Notizia"
     },
     {
