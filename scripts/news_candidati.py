@@ -345,10 +345,12 @@ def collect(config, now=None):
 
             except Exception as exc:
                 import traceback
-                traceback.print_exc()
+                traceback_text = traceback.format_exc()
+                print(traceback_text, file=sys.stderr)
                 problems.append(
                     f"{name}: feed non leggibile "
                     f"({type(exc).__name__}: {exc}) [{url}]"
+                    f"\\nDettaglio tecnico: {traceback_text.strip()}"
                 )
                 continue
 
