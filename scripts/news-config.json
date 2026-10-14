@@ -1,0 +1,39 @@
+{
+  "finestra_ore": 30,
+  "max_voci": 40,
+  "fonti": [
+    {
+      "nome": "Gazzetta Ufficiale - Serie Generale",
+      "url": "https://www.gazzettaufficiale.it/rss/SG",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "Normattiva",
+      "sito": "https://www.normattiva.it/",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "Senato della Repubblica",
+      "sito": "https://www.senato.it/",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "Governo italiano",
+      "sito": "https://www.governo.it/",
+      "tipo": "Notizia"
+    },
+    {
+      "nome": "EUR-Lex",
+      "sito": "https://eur-lex.europa.eu/",
+      "tipo": "Notizia"
+    }
+  ],
+  "parole_chiave": [
+    "tribut", "fiscal", "imposta", "imposte", "iva\\b", "vat\\b", "accise", "dogan",
+    "evasion", "frod", "fraud", "riciclagg", "antiriciclagg", "autoriciclagg", "money laundering",
+    "confisc", "sequestr", "sanzion", "reat", "penal",
+    "74/2000", "231/2001", "condon", "concordato", "contenzioso", "accertament",
+    "crisi d.impresa", "insolvenz", "bancarott", "riscossione", "cartell",
+    "agenzia delle entrate", "guardia di finanza", "dichiarazion", "\\btax"
+  ]
+}
