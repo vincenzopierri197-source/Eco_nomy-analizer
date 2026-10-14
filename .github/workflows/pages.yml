@@ -1,4 +1,3 @@
-
 name: Pubblica eco-nomy su GitHub Pages
 
 on:
@@ -30,6 +29,26 @@ jobs:
       - name: Configura GitHub Pages
         uses: actions/configure-pages@v6
 
+      # Blocca la pubblicazione se news.json è rotto, così Norma-Aggiorna non si rompe sul sito.
+      # Non viene eseguito in modalità manutenzione.
+      - name: Controlla news.json
+        if: ${{ hashFiles('news.json') != '' && hashFiles('.maintenance') == '' }}
+        run: |
+          python3 - <<'PY'
+          import json, re
+          d = json.load(open('news.json', encoding='utf-8'))
+          data_ok = lambda s: isinstance(s, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', s)
+          assert isinstance(d.get('voci'), list), "manca l'elenco 'voci'"
+          assert data_ok(d.get('aggiornato')), "campo 'aggiornato' non valido (usa AAAA-MM-GG)"
+          for i, v in enumerate(d['voci'], 1):
+              assert v.get('titolo'), f"voce {i}: manca 'titolo'"
+              assert data_ok(v.get('data')), f"voce {i}: 'data' non valida (usa AAAA-MM-GG)"
+              assert v.get('tipo') in ('Riforma', 'Prassi', 'Notizia'), f"voce {i}: 'tipo' deve essere Riforma, Prassi o Notizia"
+              u = v.get('url', '')
+              assert not u or u.startswith(('http://', 'https://')), f"voce {i}: 'url' deve iniziare con http:// o https://"
+          print('news.json valido:', len(d['voci']), 'voci')
+          PY
+
       - name: Prepara il sito
         run: |
           mkdir -p _site
@@ -45,13 +64,36 @@ jobs:
               cp .nojekyll _site/.nojekyll
             fi
           else
+            # Tutto ciò che resta nella cartella principale viene pubblicato:
+            # qui si escludono i file che non fanno parte del sito (script, note, regole).
             rsync -a \
               --exclude='.git/' \
               --exclude='.github/' \
               --exclude='_site/' \
               --exclude='.maintenance' \
+              --exclude='.gitignore' \
+              --exclude='README.md' \
+              --exclude='firebase/' \
+              --exclude='*.py' \
+              --exclude='requirements*.txt' \
               ./ _site/
           fi
+
+      # Mostra nel log cosa viene pubblicato e avvisa se manca qualcosa.
+      - name: Verifica i file pubblicati
+        if: ${{ hashFiles('.maintenance') == '' }}
+        run: |
+          if [ ! -f _site/index.html ]; then
+            echo "::error::Manca index.html nel sito: caricalo nella cartella principale del repository."
+            exit 1
+          fi
+          if [ ! -f _site/news.json ]; then
+            echo "::warning::news.json non è nel sito: Norma-Aggiorna mostrerà 'Nessun aggiornamento disponibile'. Caricalo nella cartella principale."
+          else
+            echo "news.json incluso nel sito."
+          fi
+          echo "File pubblicati (primo livello):"
+          ls -1 _site
 
       - name: Carica il sito
         uses: actions/upload-pages-artifact@v5
