@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """Raccoglie novita' normative da feed RSS/Atom/RDF ufficiali.
 Propone le voci candidate senza modificare news.json e senza usare AI."""
