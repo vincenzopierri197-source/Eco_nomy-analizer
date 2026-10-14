@@ -103,8 +103,7 @@ def looks_like_xml_feed(raw):
 
 
 def normalize_xml_encoding(raw):
-    """Restituisce sempre bytes e corregge solo XML UTF-16 dichiarati male."""
-    # Tutte le operazioni successive lavorano esclusivamente su bytes.
+    """Restituisce bytes e corregge dichiarazioni UTF-16 incoerenti."""
     if isinstance(raw, str):
         raw = raw.encode("utf-8")
     elif isinstance(raw, bytearray):
@@ -117,24 +116,23 @@ def normalize_xml_encoding(raw):
     if not raw:
         return raw
 
-    # Un BOM o una struttura UTF-16/UTF-32 reale non va alterata.
+    # Conserva documenti con BOM o struttura UTF-16/UTF-32 reale.
     if raw.startswith((
-        b"\\xff\\xfe", b"\\xfe\\xff",
-        b"\\x00\\x00\\xfe\\xff", b"\\xff\\xfe\\x00\\x00",
+        b"\xff\xfe", b"\xfe\xff",
+        b"\x00\x00\xfe\xff", b"\xff\xfe\x00\x00",
     )):
         return raw
 
     if (
-        raw.startswith(b"\\x00<")
-        or raw.startswith(b"<\\x00")
-        or raw.startswith(b"\\x00\\x00<\\x00")
-        or raw.startswith(b"<\\x00\\x00\\x00")
+        raw.startswith(b"\x00<")
+        or raw.startswith(b"<\x00")
+        or raw.startswith(b"\x00\x00<\x00")
+        or raw.startswith(b"<\x00\x00\x00")
     ):
         return raw
 
-    # Cerca una dichiarazione XML nei primi byte ASCII.
     declaration = re.match(
-        rb"""(\\s*<\\?xml\\b[^?]*?\\bencoding\\s*=\\s*)(['"])([^'"]+)(['"])""",
+        rb"""(\s*<\?xml\b[^?]*?\bencoding\s*=\s*)(['"])([^'"]+)(['"])""",
         raw[:300],
         flags=re.IGNORECASE,
     )
@@ -143,10 +141,9 @@ def normalize_xml_encoding(raw):
 
     declared = declaration.group(3).lower().replace(b"_", b"-")
     if declared in (b"utf-16", b"utf-16le", b"utf-16be"):
-        # Sostituzione interamente bytes: evita il TypeError str/bytes.
         raw = re.sub(
-            rb"""(\\bencoding\\s*=\\s*)(['"])[^'"]+(['"])""",
-            rb"\\1\\2UTF-8\\3",
+            rb"""(\bencoding\s*=\s*)(['"])[^'"]+(['"])""",
+            rb"\1\2UTF-8\3",
             raw,
             count=1,
             flags=re.IGNORECASE,
@@ -347,6 +344,8 @@ def collect(config, now=None):
                 continue
 
             except Exception as exc:
+                import traceback
+                traceback.print_exc()
                 problems.append(
                     f"{name}: feed non leggibile "
                     f"({type(exc).__name__}: {exc}) [{url}]"
