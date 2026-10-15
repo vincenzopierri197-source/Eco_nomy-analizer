@@ -14,6 +14,9 @@ Comandi:
   /pubblica                     avvia la pubblicazione su GitHub Pages
   /manutenzione on|off          attiva/disattiva la pagina di manutenzione
   /manutenzione                 mostra lo stato attuale
+  /news_on                      attiva la raccolta normativa automatica
+  /news_off                     disattiva la raccolta normativa automatica
+  /news_status                  mostra lo stato della raccolta normativa
   /news tipo | titolo | fonte | link   aggiunge una notizia a Norma-Aggiorna
   /news                         elenca le notizie; /news elimina N le rimuove
   file o foto                   caricati in uploads/
@@ -48,6 +51,7 @@ HELP = (
     "/ultimi\n"
     "/pubblica\n"
     "/manutenzione on|off\n"
+    "/news_on · /news_off · /news_status\n"
     "/news tipo | titolo | fonte | link\n"
     "/news (elenco) · /news elimina N\n"
     "Oppure mandami un file o una foto: li carico in uploads/."
@@ -221,6 +225,55 @@ def cmd_manutenzione(arg, msg):
         reply(err(st, res))
 
 
+def news_collection_status():
+    """Legge lo stato persistente della raccolta normativa da scripts/news-config.json."""
+    st, res = gh("GET", "/contents/scripts/news-config.json", params={"ref": BRANCH})
+    if st != 200 or not isinstance(res, dict):
+        return None, err(st, res)
+    try:
+        config = json.loads(base64.b64decode(res["content"]).decode("utf-8"))
+    except (ValueError, KeyError):
+        return None, "❌ Il file scripts/news-config.json non contiene JSON valido."
+    return config.get("ricezione_attiva", True) is True, None
+
+
+def cmd_news_status(arg, msg):
+    active, problem = news_collection_status()
+    if problem:
+        return reply(problem)
+    reply(
+        "🟢 Raccolta automatica delle novità normative ATTIVA."
+        if active else
+        "🔴 Raccolta automatica delle novità normative DISATTIVATA. Le notizie già pubblicate restano disponibili."
+    )
+
+
+def cmd_news_toggle(arg, msg):
+    command = (msg.get("text") or "").strip().split(None, 1)[0].split("@")[0].lower()
+    mode = "attiva" if command == "/news_on" else "disattiva"
+    wanted = mode == "attiva"
+    active, problem = news_collection_status()
+    if problem:
+        return reply(problem)
+    if active is wanted:
+        return reply(
+            "🟢 La raccolta normativa è già attiva."
+            if wanted else
+            "🔴 La raccolta normativa è già disattivata. Le notizie già pubblicate non sono state cancellate."
+        )
+    wf, problem = find_workflow("Raccogli novita normative (candidate)")
+    if problem:
+        return reply(problem)
+    st, res = dispatch(wf, {"modalita_ricezione": mode})
+    if st == 204:
+        reply(
+            f"⏳ Richiesta ricevuta: raccolta normativa {mode}. "
+            "GitHub aggiornerà l'impostazione e avvierà il workflow."
+        )
+    else:
+        reply(err(st, res))
+
+
 def read_news():
     """Ritorna (status, dati, sha). Se il file non esiste ancora, parte da un elenco vuoto."""
     st, cur = gh("GET", "/contents/" + NEWS_FILE, params={"ref": BRANCH})
@@ -372,7 +425,8 @@ def upload(msg):
 COMMANDS = {
     "/issue": cmd_issue, "/nota": cmd_nota, "/issues": cmd_issues,
     "/ultimi": cmd_ultimi, "/pubblica": cmd_pubblica, "/manutenzione": cmd_manutenzione,
-    "/news": cmd_news,
+    "/news": cmd_news, "/news_on": cmd_news_toggle,
+    "/news_off": cmd_news_toggle, "/news_status": cmd_news_status,
 }
 
 
