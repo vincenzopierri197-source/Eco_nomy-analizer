@@ -43,7 +43,7 @@ jobs:
           config = json.loads(path.read_text(encoding="utf-8"))
           config["ricezione_attiva"] = os.environ["MODALITA_RICEZIONE"] == "attiva"
           path.write_text(
-              json.dumps(config, ensure_ascii=False, indent=2) + "\\n",
+              json.dumps(config, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8"
           )
           PY
@@ -60,11 +60,12 @@ jobs:
         run: |
           python3 - <<'PY'
           import json
+          import os
           with open("scripts/news-config.json", encoding="utf-8") as file:
               config = json.load(file)
           attiva = config.get("ricezione_attiva", True) is True
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"attiva={'true' if attiva else 'false'}\\n")
+              output.write(f"attiva={'true' if attiva else 'false'}\n")
           print("Ricezione notizie: " + ("ATTIVA" if attiva else "DISATTIVATA"))
           PY
         shell: bash
