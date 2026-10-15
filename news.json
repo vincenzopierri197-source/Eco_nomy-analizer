@@ -1,19 +1,19 @@
 {
-  "aggiornato": "2026-10-14",
+  "aggiornato": "2026-10-15",
   "voci": [
     {
       "data": "2026-10-14",
-      "tipo": "Riforma",
-      "titolo": "Voce di esempio: qui comparirà il titolo della riforma o della notizia",
-      "fonte": "Indica qui la fonte reale",
-      "url": ""
+      "tipo": "Notizia",
+      "titolo": "Campagna di comunicazione istituzionale “Concordato preventivo biennale 2026 – 2027”",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/media/campagna-di-comunicazione-istituzionale-concordato-preventivo-biennale-2026-2027/32845"
     },
     {
-      "data": "2026-10-13",
-      "tipo": "Riforma",
-      "titolo": "Per aggiornare l’elenco modifica il file news.json nel repository",
-      "fonte": "Sostituisci queste voci di esempio con notizie verificate",
-      "url": ""
+      "data": "2026-10-14",
+      "tipo": "Notizia",
+      "titolo": "Aperti - Confesercenti Forum 2026, il videomessaggio del Presidente Meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/aperti-confesercenti-forum-2026-il-videomessaggio-del-presidente-meloni/32843"
     }
   ]
 }
