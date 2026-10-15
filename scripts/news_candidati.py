@@ -1,8 +1,9 @@
 
 #!/usr/bin/env python3
-"""Raccoglie novita' normative da feed RSS/Atom/RDF ufficiali.
-Propone le voci candidate senza modificare news.json e senza usare AI."""
+"""Raccoglie novita' normative e aggiorna automaticamente Norma-Aggiorna."""
 
+
+import base64
 import html
 import json
 import os
@@ -675,6 +676,136 @@ def invia_telegram(text):
         )
 
 
+
+def aggiorna_news_json(candidates):
+    """Aggiunge le candidate a news.json e avvia GitHub Pages."""
+    token = os.environ.get("GITHUB_TOKEN")
+    repository = os.environ.get("GITHUB_REPOSITORY")
+    branch = os.environ.get("GITHUB_REF_NAME", "main")
+    if not token or not repository:
+        return 0, False, "GITHUB_TOKEN o GITHUB_REPOSITORY non configurato."
+
+    api_base = f"https://api.github.com/repos/{repository}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": UA,
+    }
+
+    def api(method, path, payload=None):
+        data = json.dumps(payload).encode("utf-8") if payload is not None else None
+        request = urllib.request.Request(
+            api_base + path,
+            data=data,
+            method=method,
+            headers={**headers, **({"Content-Type": "application/json"} if data else {})},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+                body = response.read()
+                return response.status, json.loads(body.decode("utf-8")) if body else {}
+        except urllib.error.HTTPError as exc:
+            body = exc.read()
+            try:
+                detail = json.loads(body.decode("utf-8"))
+            except Exception:
+                detail = {"message": body.decode("utf-8", errors="replace")[:500]}
+            return exc.code, detail
+
+    path = "/contents/news.json?ref=" + branch
+    status, current = api("GET", path)
+    if status != 200:
+        return 0, False, f"Impossibile leggere news.json (HTTP {status}: {current.get('message', '')})."
+
+    try:
+        content = base64.b64decode(current["content"]).decode("utf-8")
+        data = json.loads(content)
+        if not isinstance(data, dict) or not isinstance(data.get("voci"), list):
+            raise ValueError("struttura news.json non valida")
+    except Exception as exc:
+        return 0, False, f"news.json non valido: {exc}"
+
+    voci = data["voci"]
+    demo_titles = (
+        "voce di esempio:",
+        "per aggiornare l’elenco modifica il file news.json",
+        "per aggiornare l'elenco modifica il file news.json",
+    )
+    cleaned = [
+        voce for voce in voci
+        if str(voce.get("titolo", "")).strip().lower() not in demo_titles
+        and not any(str(voce.get("titolo", "")).strip().lower().startswith(t) for t in demo_titles)
+    ]
+    known = {
+        str(voce.get("url", "")).strip().rstrip("/")
+        for voce in cleaned if voce.get("url")
+    }
+    known_titles = {
+        re.sub(r"\s+", " ", str(voce.get("titolo", "")).strip()).casefold()
+        for voce in cleaned
+    }
+    added = 0
+    for candidate in candidates:
+        url = safe_url(candidate.get("url", ""))
+        title = re.sub(r"\s+", " ", str(candidate.get("titolo", "")).strip())
+        date = candidate.get("data")
+        if not title or not url or not date:
+            continue
+        normalized_url = url.rstrip("/")
+        normalized_title = title.casefold()
+        if normalized_url in known or normalized_title in known_titles:
+            continue
+        tipo = candidate.get("tipo", "Notizia")
+        if tipo not in ("Riforma", "Prassi", "Notizia"):
+            tipo = "Notizia"
+        cleaned.append({
+            "data": date.strftime("%Y-%m-%d"),
+            "tipo": tipo,
+            "titolo": title[:300],
+            "fonte": str(candidate.get("fonte", "Fonte ufficiale"))[:100],
+            "url": url,
+        })
+        known.add(normalized_url)
+        known_titles.add(normalized_title)
+        added += 1
+
+    cleaned.sort(key=lambda voce: str(voce.get("data", "")), reverse=True)
+    cleaned = cleaned[:50]
+    changed = (cleaned != voci) or not data.get("aggiornato")
+    if not changed:
+        return 0, False, ""
+
+    data["voci"] = cleaned
+    data["aggiornato"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    payload = {
+        "message": f"Aggiorna Norma-Aggiorna: {added} nuove voci",
+        "branch": branch,
+        "sha": current["sha"],
+        "content": base64.b64encode(
+            (json.dumps(data, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        ).decode("ascii"),
+    }
+    status, result = api("PUT", "/contents/news.json", payload)
+    if status not in (200, 201):
+        return 0, False, f"Salvataggio news.json fallito (HTTP {status}: {result.get('message', '')})."
+
+    # I commit effettuati con GITHUB_TOKEN non avviano un workflow push:
+    # richiediamo esplicitamente la pubblicazione Pages.
+    status, result = api(
+        "POST",
+        f"/actions/workflows/pages.yml/dispatches",
+        {"ref": branch},
+    )
+    if status != 204:
+        return added, False, (
+            f"news.json aggiornato, ma avvio GitHub Pages fallito "
+            f"(HTTP {status}: {result.get('message', '')})."
+        )
+    return added, True, ""
+
+
+
 def main():
     config_path = os.path.join(HERE, "news-config.json")
 
@@ -682,11 +813,16 @@ def main():
         config = json.load(file)
 
     candidates, problems, notes = collect(config)
+    pubblicate, deploy_avviato, publish_error = aggiorna_news_json(candidates)
 
     lines = [
         f"## Norma-Aggiorna: {len(candidates)} novita' candidate",
+        f"- Nuove voci inserite in news.json: {pubblicate}",
+        f"- Pubblicazione GitHub Pages avviata: {'sì' if deploy_avviato else 'no'}",
         "",
     ]
+    if publish_error:
+        lines.extend(["### Problema di pubblicazione", "", f"- {publish_error}", ""])
 
     for candidate in candidates:
         lines.append(
@@ -725,10 +861,15 @@ def main():
     for problem in problems:
         print(f"::warning::{problem}")
 
-    if candidates or problems:
-        invia_telegram(
-            messaggio_telegram(candidates, problems)
-        )
+    if candidates or problems or pubblicate or publish_error:
+        telegram_text = messaggio_telegram(candidates, problems)
+        if pubblicate:
+            telegram_text += f"\n\n✅ Nuove voci inserite in Norma-Aggiorna: {pubblicate}."
+        if deploy_avviato:
+            telegram_text += "\n🚀 Pubblicazione del sito avviata."
+        if publish_error:
+            telegram_text += "\n⚠️ " + html.escape(publish_error)
+        invia_telegram(telegram_text)
 
     if len(problems) >= len(config.get("fonti", [])):
         sys.exit("Nessuna fonte ha funzionato.")
