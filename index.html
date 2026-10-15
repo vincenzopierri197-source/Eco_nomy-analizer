@@ -1042,6 +1042,110 @@ window.ecoNomyBackup=(() => {
  body.eco-tech :is(.cp-head h3,.vp-sechead,.fc-section h4,.fc-diff h5,.iq-header h3,.eco-method-box summary,#ecoPractice summary){color:#e0f1fc;}
  body.eco-tech :is(.cp-note,.cp-head p,.vp-note,.vp-muted,.vp-status,.vp-item p,.vp-source p,.ct-note,.ct-card p,.nv-note,.nv-status,.fc-sub,.fc-status,.fc-diff p,.fc-diff li,.pr-desc,.pr-status,.pr-option,.iq-note,.iq-summary,.iq-summary p,.iq-card p,.iq-question p,.kb-bridge-desc,.kb-bridge-status,.eco-method-box p,.eco-method-box label,#ecoPractice p,#ecoPractice label){color:#afc4d7!important;}
  body.eco-tech :is(.cp-original pre,.cp-point,.cp-observation,.cp-comment,.vp-item pre,.nv-diff,.pr-counters span,.fc-version,.fc-task-candidate,.fc-evidence-kind,.iq-hypothesis-note,#ecoPractice .ep-grid pre){background:#0e1c2c;color:#d5e5f3;border-color:#34506a;}
+
+ /* === CORREZIONE LEGGIBILITÀ: CONFRONTO REPORT E VERIFICHE ===
+    Questa sezione usa intenzionalmente una superficie chiara anche con il tema scuro.
+    I selettori specifici e !important neutralizzano le regole generali del tema. */
+ body.eco-tech #cpRoot {
+   background:#ffffff !important;
+   color:#1f2937 !important;
+   border-color:#cbd5e1 !important;
+ }
+ body.eco-tech #cpRoot .cp-body,
+ body.eco-tech #cpRoot .cp-body label,
+ body.eco-tech #cpRoot #cpSummary,
+ body.eco-tech #cpRoot #cpStatus,
+ body.eco-tech #cpRoot .cp-note {
+   color:#1f2937 !important;
+   line-height:1.6;
+ }
+ body.eco-tech #cpRoot .cp-head {
+   background:#e2e8f0 !important;
+   color:#111827 !important;
+   border-bottom:1px solid #cbd5e1 !important;
+ }
+ body.eco-tech #cpRoot .cp-head h3,
+ body.eco-tech #cpRoot .cp-head p {
+   color:#111827 !important;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap {
+   width:100%;
+   overflow-x:auto;
+   margin-top:18px;
+   border:1px solid #cbd5e1;
+   border-radius:8px;
+   background:#ffffff !important;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap table {
+   width:100%;
+   min-width:760px;
+   border-collapse:collapse;
+   color:#1f2937 !important;
+   background:#ffffff !important;
+   font-size:14px;
+   line-height:1.55;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap thead th {
+   background:#e2e8f0 !important;
+   color:#111827 !important;
+   font-weight:700;
+   text-align:left;
+   padding:13px 12px;
+   border:1px solid #cbd5e1;
+   vertical-align:top;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap tbody td {
+   background:#ffffff !important;
+   color:#1f2937 !important;
+   padding:12px;
+   border:1px solid #d1d5db;
+   text-align:left;
+   vertical-align:top;
+   overflow-wrap:anywhere;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap tbody tr:nth-child(even) td {
+   background:#f1f5f9 !important;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap tbody tr:hover td {
+   background:#dbeafe !important;
+   color:#1f2937 !important;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap tbody td strong,
+ body.eco-tech #cpRoot .cp-table-wrap tbody td b {
+   color:#111827 !important;
+   font-weight:700;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap tbody td a {
+   color:#1d4ed8 !important;
+   text-decoration:underline;
+ }
+ body.eco-tech #cpRoot .cp-table-wrap tbody td small {
+   color:#475569 !important;
+ }
+ body.eco-tech #cpRoot .cp-original {
+   color:#1f2937 !important;
+   background:#f8fafc !important;
+   border:1px solid #cbd5e1;
+   border-radius:6px;
+   padding:10px;
+ }
+ body.eco-tech #cpRoot .cp-original summary {
+   color:#1f2937 !important;
+ }
+ body.eco-tech #cpRoot #cpReport,
+ body.eco-tech #cpRoot .cp-original pre {
+   color:#1f2937 !important;
+   background:#ffffff !important;
+   border-color:#cbd5e1 !important;
+   white-space:pre-wrap;
+   overflow-wrap:anywhere;
+ }
+ body.eco-tech #cpRoot #cpStatus.cp-stale {
+   color:#854d0e !important;
+   background:#fff4d5 !important;
+   border-color:#e9d8ad !important;
+ }
+
  body.eco-tech :is(.fc-positive,.vp-ok){background:#102d29!important;border-color:#3a7564!important;color:#b5efd7!important;}
  body.eco-tech :is(.eco-warn,.cp-stale,.cp-status.cp-stale,.vp-warn,.nv-warning,.fc-negative,.eco-case-notice,#ecoPractice .ep-status,.eco-request-feedback,.eco-request-controls button){background:#332b1c!important;border-color:#705936!important;color:#f3d7a4!important;border-radius:8px;}
  body.eco-tech :is(.vp-error,.fc-error,.pr-error,#ecoPasswordError,.mp-x,.fc-delete){color:#ffb5ba!important;}
@@ -2447,101 +2551,6 @@ ${body}
 <hr>
 <p style="font-size:8pt;color:#64748b;">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
 
-
-
-<style id="cpReadableTablePatch">
-/* Leggibilità mirata: tabella Confronto report e verifiche. */
-#cpRoot .cp-table-wrap{
-  max-width:100%;
-  overflow-x:auto;
-  border:1px solid #526982;
-  border-radius:10px;
-  background:#101b2a!important;
-  scrollbar-color:#71869d #172638;
-}
-#cpRoot .cp-table-wrap table{
-  width:100%;
-  min-width:900px;
-  border-collapse:separate;
-  border-spacing:0;
-  background:#101b2a!important;
-  color:#edf4fb!important;
-  font-size:13px;
-  line-height:1.55;
-}
-#cpRoot .cp-table-wrap thead th{
-  background:#203f5e!important;
-  color:#fff!important;
-  border:1px solid #617b96!important;
-  font-size:12px;
-  font-weight:800;
-  padding:12px;
-  vertical-align:middle;
-}
-#cpRoot .cp-table-wrap tbody td{
-  background:#142337!important;
-  color:#e8f0f8!important;
-  border:1px solid #40566e!important;
-  padding:12px;
-  vertical-align:top;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-  min-width:170px;
-}
-#cpRoot .cp-table-wrap tbody tr:nth-child(even) td{
-  background:#1b2d42!important;
-}
-#cpRoot .cp-table-wrap tbody tr:hover td{
-  background:#263d55!important;
-}
-#cpRoot .cp-table-wrap tbody td:first-child{
-  min-width:130px;
-  color:#fff!important;
-  font-weight:750;
-}
-#cpRoot .cp-table-wrap tbody td:nth-child(2){
-  min-width:210px;
-}
-#cpRoot .cp-table-wrap tbody td:nth-child(3),
-#cpRoot .cp-table-wrap tbody td:nth-child(4){
-  min-width:250px;
-}
-#cpRoot .cp-table-wrap td small{
-  display:block;
-  margin-top:8px;
-  padding-top:7px;
-  border-top:1px solid #52677d;
-  color:#c4d3e2!important;
-  font-size:11px;
-  line-height:1.5;
-}
-#cpRoot #cpSummary{
-  color:#e4edf7!important;
-  line-height:1.65;
-}
-#cpRoot #cpStatus{
-  color:#e4edf7!important;
-  line-height:1.6;
-}
-#cpRoot #cpStatus.cp-stale{
-  padding:10px 12px;
-  background:#3a301b!important;
-  color:#ffe2a0!important;
-  border:1px solid #806a36!important;
-  border-radius:8px;
-}
-#cpRoot #cpSource{
-  background:#17283b!important;
-  color:#f0f5fb!important;
-  border:1px solid #617b96!important;
-}
-@media(max-width:700px){
-  #cpRoot .cp-body{padding:0 12px 14px;}
-  #cpRoot .cp-table-wrap table{font-size:12px;min-width:850px;}
-  #cpRoot .cp-table-wrap th,
-  #cpRoot .cp-table-wrap td{padding:10px;}
-}
-</style>
 
 </body></html>`;
 
