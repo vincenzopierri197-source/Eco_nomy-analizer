@@ -2448,6 +2448,101 @@ ${body}
 <p style="font-size:8pt;color:#64748b;">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
 
 
+
+<style id="cpReadableTablePatch">
+/* Leggibilità mirata: tabella Confronto report e verifiche. */
+#cpRoot .cp-table-wrap{
+  max-width:100%;
+  overflow-x:auto;
+  border:1px solid #526982;
+  border-radius:10px;
+  background:#101b2a!important;
+  scrollbar-color:#71869d #172638;
+}
+#cpRoot .cp-table-wrap table{
+  width:100%;
+  min-width:900px;
+  border-collapse:separate;
+  border-spacing:0;
+  background:#101b2a!important;
+  color:#edf4fb!important;
+  font-size:13px;
+  line-height:1.55;
+}
+#cpRoot .cp-table-wrap thead th{
+  background:#203f5e!important;
+  color:#fff!important;
+  border:1px solid #617b96!important;
+  font-size:12px;
+  font-weight:800;
+  padding:12px;
+  vertical-align:middle;
+}
+#cpRoot .cp-table-wrap tbody td{
+  background:#142337!important;
+  color:#e8f0f8!important;
+  border:1px solid #40566e!important;
+  padding:12px;
+  vertical-align:top;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  min-width:170px;
+}
+#cpRoot .cp-table-wrap tbody tr:nth-child(even) td{
+  background:#1b2d42!important;
+}
+#cpRoot .cp-table-wrap tbody tr:hover td{
+  background:#263d55!important;
+}
+#cpRoot .cp-table-wrap tbody td:first-child{
+  min-width:130px;
+  color:#fff!important;
+  font-weight:750;
+}
+#cpRoot .cp-table-wrap tbody td:nth-child(2){
+  min-width:210px;
+}
+#cpRoot .cp-table-wrap tbody td:nth-child(3),
+#cpRoot .cp-table-wrap tbody td:nth-child(4){
+  min-width:250px;
+}
+#cpRoot .cp-table-wrap td small{
+  display:block;
+  margin-top:8px;
+  padding-top:7px;
+  border-top:1px solid #52677d;
+  color:#c4d3e2!important;
+  font-size:11px;
+  line-height:1.5;
+}
+#cpRoot #cpSummary{
+  color:#e4edf7!important;
+  line-height:1.65;
+}
+#cpRoot #cpStatus{
+  color:#e4edf7!important;
+  line-height:1.6;
+}
+#cpRoot #cpStatus.cp-stale{
+  padding:10px 12px;
+  background:#3a301b!important;
+  color:#ffe2a0!important;
+  border:1px solid #806a36!important;
+  border-radius:8px;
+}
+#cpRoot #cpSource{
+  background:#17283b!important;
+  color:#f0f5fb!important;
+  border:1px solid #617b96!important;
+}
+@media(max-width:700px){
+  #cpRoot .cp-body{padding:0 12px 14px;}
+  #cpRoot .cp-table-wrap table{font-size:12px;min-width:850px;}
+  #cpRoot .cp-table-wrap th,
+  #cpRoot .cp-table-wrap td{padding:10px;}
+}
+</style>
+
 </body></html>`;
 
             const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
