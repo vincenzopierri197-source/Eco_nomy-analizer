@@ -4,6 +4,16 @@ on:
   schedule:
     - cron: '30 5 * * 1-6'   # dal lunedi al sabato, 05:30 UTC (06:30 o 07:30 in Italia)
   workflow_dispatch:
+    inputs:
+      modalita_ricezione:
+        description: "Attiva o disattiva la raccolta automatica delle notizie"
+        required: true
+        type: choice
+        default: mantieni
+        options:
+          - mantieni
+          - attiva
+          - disattiva
 
 permissions:
   contents: write
@@ -16,8 +26,57 @@ jobs:
     steps:
       - name: Recupera i file
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aggiorna modalità ricezione (solo avvio manuale)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.modalita_ricezione != 'mantieni' }}
+        env:
+          MODALITA_RICEZIONE: ${{ inputs.modalita_ricezione }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path("scripts/news-config.json")
+          config = json.loads(path.read_text(encoding="utf-8"))
+          config["ricezione_attiva"] = os.environ["MODALITA_RICEZIONE"] == "attiva"
+          path.write_text(
+              json.dumps(config, ensure_ascii=False, indent=2) + "\\n",
+              encoding="utf-8"
+          )
+          PY
+          if ! git diff --quiet -- scripts/news-config.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add scripts/news-config.json
+            git commit -m "Imposta modalità ricezione notizie"
+            git push
+          fi
+
+      - name: Verifica modalità ricezione
+        id: modalita
+        run: |
+          python3 - <<'PY'
+          import json
+          with open("scripts/news-config.json", encoding="utf-8") as file:
+              config = json.load(file)
+          attiva = config.get("ricezione_attiva", True) is True
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"attiva={'true' if attiva else 'false'}\\n")
+          print("Ricezione notizie: " + ("ATTIVA" if attiva else "DISATTIVATA"))
+          PY
+        shell: bash
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Raccolta saltata perché disattivata
+        if: ${{ steps.modalita.outputs.attiva != 'true' }}
+        run: echo "La ricezione delle notizie è disattivata. Nessuna fonte verrà consultata."
 
       - name: Raccogli le novita
+        if: ${{ steps.modalita.outputs.attiva == 'true' }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
