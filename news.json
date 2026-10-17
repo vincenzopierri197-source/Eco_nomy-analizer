@@ -1,6 +1,41 @@
 {
-  "aggiornato": "2026-10-16",
+  "aggiornato": "2026-10-17",
   "voci": [
+    {
+      "data": "2026-10-16",
+      "tipo": "Notizia",
+      "titolo": "Consiglio europeo del 15 e 16 ottobre, il punto stampa del Presidente Meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/consiglio-europeo-del-15-e-16-ottobre-il-punto-stampa-del-presidente-meloni/32870"
+    },
+    {
+      "data": "2026-10-16",
+      "tipo": "Notizia",
+      "titolo": "DECRETO LEGISLATIVO 25 settembre 2026, n.186",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/16/26G00203/SG"
+    },
+    {
+      "data": "2026-10-16",
+      "tipo": "Notizia",
+      "titolo": "ISTITUTO PER LA VIGILANZA SULLE ASSICURAZIONI - COMUNICATO",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/16/26A05417/SG"
+    },
+    {
+      "data": "2026-10-16",
+      "tipo": "Notizia",
+      "titolo": "Messaggio del Presidente del Consiglio, Giorgia Meloni, alla Fondazione Bellisario",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/messaggio-del-presidente-del-consiglio-giorgia-meloni-alla-fondazione-bellisario/32865"
+    },
+    {
+      "data": "2026-10-16",
+      "tipo": "Notizia",
+      "titolo": "President Meloni’s address to the Senate ahead of the European Council meeting on 15-16 October",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/node/32864"
+    },
     {
       "data": "2026-10-15",
       "tipo": "Notizia",
