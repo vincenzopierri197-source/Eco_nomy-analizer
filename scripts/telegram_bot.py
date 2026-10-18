@@ -337,11 +337,15 @@ def news_list():
     if not voci:
         return reply("Nessuna notizia in news.json. Aggiungine una con:\n/news tipo | titolo | fonte | link")
     lines = []
-    for n, i in enumerate(news_order(voci)[:10], 1):
+    for n, i in enumerate(news_order(voci)[:8], 1):
         v = voci[i]
-        lines.append(f"{n}) [{v.get('tipo', '')}] {v.get('titolo', '')} ({v.get('data', '')})")
-    extra = f"\n… e altre {len(voci) - 10}" if len(voci) > 10 else ""
-    reply("Notizie sul sito:\n" + "\n".join(lines) + extra)
+        titolo = v.get("titolo", "")
+        data_n = v.get("data", "")
+        url = (v.get("url") or "").strip()
+        lines.append(f"{n}) [{v.get('tipo', '')}] {titolo} ({data_n})")
+        lines.append(f"🔗 {url}" if re.match(r"https?://", url, re.I) else "🔗 Link non disponibile")
+    extra = f"\n… e altre {len(voci) - 8}" if len(voci) > 8 else ""
+    reply("Notizie sul sito (con link):\n" + "\n".join(lines) + extra)
 
 
 def news_add(arg):
