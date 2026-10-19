@@ -1888,7 +1888,7 @@ window.ecoNomyBackup=(() => {
         <p><strong>EcoNomy-AnalYzer</strong> &bull; Workspace di supporto giuridico-operativo &bull; Elaborazione tramite API Google Gemini &bull; Non inserire dati riservati</p>
         <p class="mt-1">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
         <p class="mt-2"><button type="button" id="ecoClearLocal" style="background:none;border:0;color:#b42318;text-decoration:underline;cursor:pointer;font-size:inherit"><i class="fa-solid fa-trash-can"></i> Cancella tutti i dati locali</button></p>
-        <p class="mt-2">Versione 2026.10.12 &middot; <button type="button" id="ecoGuideBtn" class="eco-linkbtn">Guida rapida</button> &middot; <a id="ecoPdfGuideLink" class="eco-linkbtn" href="./ECO-NOMY_Presentazione_tecnica_v4_screenshot.pdf" target="_blank" rel="noopener noreferrer" aria-label="Guida PDF: apri in una nuova scheda"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Guida PDF</a> &middot; <button type="button" id="ecoPrivBtn" class="eco-linkbtn">Informativa privacy (bozza)</button></p>
+        <p class="mt-2">Versione 2026.10.12 &middot; <button type="button" id="ecoGuideBtn" class="eco-linkbtn">Guida rapida</button> &middot; <a id="ecoPdfGuideLink" class="eco-linkbtn" href="./EcoNomy-AnalYzer%20Guida%20Introduttiva.pdf" target="_blank" rel="noopener noreferrer" aria-label="Guida PDF: apri in una nuova scheda"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Guida PDF</a> &middot; <button type="button" id="ecoPrivBtn" class="eco-linkbtn">Informativa privacy (bozza)</button></p>
     </footer>
 
 
@@ -4905,6 +4905,13 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 .eco-genius-footer span{font-size:11px;color:#64798b;line-height:1.4}
 .eco-genius-done{border:0;background:#0e3c5d;color:white;font-size:12px;font-weight:800;padding:11px 23px;border-radius:9px;cursor:pointer}
 .eco-genius-done:hover{background:#15577c}
+.eco-genius-slides{display:flex;align-items:center;gap:12px;margin-top:14px;padding:13px 16px;border:1px solid #d5e2eb;border-radius:12px;background:#f4f9fc;text-decoration:none;color:#0e3c5d}
+.eco-genius-slides:hover{background:#e8f3f9}
+.eco-genius-slides i{font-size:24px;color:#b42318}
+.eco-genius-slides strong{display:block;font-size:13px}
+.eco-genius-slides small{display:block;font-size:11px;color:#64798b;line-height:1.35}
+body.eco-tech .eco-genius-slides{background:#14263a;border-color:#345067;color:#cbdfee}
+body.eco-tech .eco-genius-slides small{color:#b4cbdc}
 @media(max-width:760px){.eco-genius-grid{grid-template-columns:1fr}.eco-genius-tools{grid-template-columns:1fr}.eco-genius-content{padding:16px}.eco-genius-hero{padding:17px 15px;gap:10px}.eco-genius-hero-logo{width:52px;height:52px;border-radius:11px}.eco-genius-hero h2{font-size:20px}.eco-genius-footer{padding:12px 16px}.eco-genius-fab{right:17px;bottom:96px;width:59px;height:59px;border-radius:17px}.eco-genius-tip{display:none}}
 @media(max-width:420px){.eco-genius-hero-logo{display:none}.eco-genius-footer span{max-width:60%}}
 @media print{.eco-genius-fab,#ecoGeniusDialog{display:none!important}}
@@ -4945,6 +4952,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
     <div class="eco-genius-tool"><span class="eco-genius-tool-num">07</span><div><strong>Report professionale PDF e Word</strong><p>Organizza i contenuti in sezioni, distingue dati da valutazioni, riporta le fonti disponibili e consente esportazione A4 e .docx modificabile.</p></div></div>
    </div>
    <div class="eco-genius-note"><strong>Come si usa:</strong> inserisci il quadro fattuale nel Modulo 01, consulta eventuali fonti nel Modulo 03, genera il report e apri nel Modulo 02 soltanto i controlli utili. La biblioteca elabora i PDF localmente nel browser; gli <strong>estratti autorizzati, il quadro fattuale e gli eventuali allegati selezionati per l'analisi possono essere inviati a Gemini</strong>. Usa soltanto materiale che puoi legittimamente condividere. Le sinossi sono didattiche: verifica sempre norme e decisioni sulle fonti ufficiali. Il fascicolo locale e i file esportati vanno custoditi con cura.</div>
+   <a class="eco-genius-slides" id="ecoSlidesGuideLink" href="./ECO-NOMY_Presentazione_tecnica_v4_screenshot.pdf" target="_blank" rel="noopener noreferrer" aria-label="Guida smart tramite slide (PDF): apri in una nuova scheda"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><span><strong>Guida smart tramite slide</strong><small>Presentazione tecnica di eco-nomy in PDF, con schermate illustrate · si apre in una nuova scheda</small></span></a>
   </div>
   <footer class="eco-genius-footer"><span>EcoNomy-AnalYzer · Legal Intelligence Workspace<br>Strumento di supporto, non istituzionale</span><button type="button" class="eco-genius-done" id="ecoGeniusDone">Ho capito · Inizia</button></footer>
  </div>
