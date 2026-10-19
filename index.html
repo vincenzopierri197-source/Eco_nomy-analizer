@@ -72,11 +72,14 @@ function safeRenderMarkdown(value) {
     ALLOWED_URI_REGEXP:/^(?:https?:\/\/|mailto:|#)/i
   });
 }
-function getGeminiApiKey() {
-  const entered = document.getElementById('apiKeyInput')?.value.trim();
+function readGeminiKey(inputId, storageKey) {
+  const entered = document.getElementById(inputId)?.value.trim();
   if (entered) return entered;
-  try { return sessionStorage.getItem('gdf_gemini_api_key') || ''; } catch (_) { return ''; }
+  try { return sessionStorage.getItem(storageKey) || ''; } catch (_) { return ''; }
 }
+function getGroqApiKey() { return readGeminiKey('apiKeyGroq', 'gdf_groq_api_key'); }
+// Chiave "di accesso" generale: Gemini, oppure Groq se è l'unica inserita.
+function getGeminiApiKey() { return readGeminiKey('apiKeyInput', 'gdf_gemini_api_key') || getGroqApiKey(); }
 const ecoGeminiRequests = (() => {
   const active = new Set();
   function update() {
@@ -223,7 +226,7 @@ window.ecoNomyBackup=(() => {
         .portal-kicker::before {content:'';display:block;width:15px;height:2px;background:var(--gold);}
         .portal-identity h1 {font-weight:800;letter-spacing:-.03em;line-height:1.14;font-size:clamp(18px,2vw,25px);max-width:730px;color:#fff;}
         .portal-subtitle {font-size:12px;color:#bfcfe0;margin-top:8px;letter-spacing:.01em;}
-        .portal-auth {display:flex;align-items:center;gap:11px;padding:10px 12px;background:rgba(4,19,36,.55);border:1px solid rgba(220,232,243,.17);border-radius:14px;box-shadow:inset 0 1px rgba(255,255,255,.055);max-width:100%;}
+        .portal-auth {display:flex;flex-wrap:wrap;align-items:center;gap:11px;padding:10px 12px;background:rgba(4,19,36,.55);border:1px solid rgba(220,232,243,.17);border-radius:14px;box-shadow:inset 0 1px rgba(255,255,255,.055);max-width:100%;}
         .portal-auth-label {font-size:9px;line-height:1.25;font-weight:800;color:#acc0d2;letter-spacing:.12em;text-transform:uppercase;}
         .portal-auth .auth-key-symbol {display:flex;justify-content:center;align-items:center;width:35px;height:35px;border-radius:10px;color:var(--gold-light);background:rgba(212,175,55,.1);}
         .portal-auth input {min-width:145px;max-width:245px;width:18vw;background:#09182a;border:1px solid #35526b;color:#fff;border-radius:8px;padding:9px 11px;font-size:12px;}
@@ -1314,7 +1317,8 @@ window.ecoNomyBackup=(() => {
                 <div class="auth-key-symbol"><i class="fa-solid fa-key" aria-hidden="true"></i></div>
                 <span class="portal-auth-label">Accesso<br>API Gemini</span>
                 <input type="password" id="apiKeyInput" placeholder="Inserisci API Key Google Gemini..." autocomplete="off" aria-label="API Key Google Gemini">
-                <button onclick="saveApiKey()" type="button" title="Conserva la chiave solo nella sessione di questa scheda">Salva sessione</button>
+                <input type="password" id="apiKeyGroq" placeholder="API Key Groq gratuita (riserva, facoltativa)..." autocomplete="off" aria-label="API Key Groq (riserva facoltativa)">
+                <button onclick="saveApiKey()" type="button" title="Conserva le chiavi solo nella sessione di questa scheda">Salva sessione</button>
             </div>
         </div>
     </header>
@@ -1884,7 +1888,7 @@ window.ecoNomyBackup=(() => {
         <p><strong>EcoNomy-AnalYzer</strong> &bull; Workspace di supporto giuridico-operativo &bull; Elaborazione tramite API Google Gemini &bull; Non inserire dati riservati</p>
         <p class="mt-1">&copy; Vincenzo Pierri &ndash; Tutti i diritti riservati</p>
         <p class="mt-2"><button type="button" id="ecoClearLocal" style="background:none;border:0;color:#b42318;text-decoration:underline;cursor:pointer;font-size:inherit"><i class="fa-solid fa-trash-can"></i> Cancella tutti i dati locali</button></p>
-        <p class="mt-2">Versione 2026.10.12 &middot; <button type="button" id="ecoGuideBtn" class="eco-linkbtn">Guida rapida</button> &middot; <a id="ecoPdfGuideLink" class="eco-linkbtn" href="./EcoNomy-AnalYzer%20Guida%20Introduttiva.pdf" target="_blank" rel="noopener noreferrer" aria-label="Guida PDF: apri in una nuova scheda"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Guida PDF</a> &middot; <button type="button" id="ecoPrivBtn" class="eco-linkbtn">Informativa privacy (bozza)</button></p>
+        <p class="mt-2">Versione 2026.10.12 &middot; <button type="button" id="ecoGuideBtn" class="eco-linkbtn">Guida rapida</button> &middot; <a id="ecoPdfGuideLink" class="eco-linkbtn" href="./ECO-NOMY_Presentazione_tecnica_v4_screenshot.pdf" target="_blank" rel="noopener noreferrer" aria-label="Guida PDF: apri in una nuova scheda"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Guida PDF</a> &middot; <button type="button" id="ecoPrivBtn" class="eco-linkbtn">Informativa privacy (bozza)</button></p>
     </footer>
 
 
@@ -2458,18 +2462,23 @@ Genera un report articolato esattamente nelle seguenti sezioni Markdown:
                 if (legacy) sessionStorage.setItem('gdf_gemini_api_key', legacy);
                 localStorage.removeItem('gdf_gemini_api_key');
                 document.getElementById('apiKeyInput').value = sessionStorage.getItem('gdf_gemini_api_key') || '';
+                document.getElementById('apiKeyGroq').value = sessionStorage.getItem('gdf_groq_api_key') || '';
             } catch (_) { try { localStorage.removeItem('gdf_gemini_api_key'); } catch (_) {} }
             renderHistory();
         });
 
         function saveApiKey() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            if (key) {
-                try { sessionStorage.setItem('gdf_gemini_api_key', key); } catch (_) { alert('Salvataggio della sessione non disponibile: la chiave resta nel campo finché la pagina è aperta.'); return; }
-                alert('API Key salvata solo per questa sessione del browser.');
+            const key1 = document.getElementById('apiKeyInput').value.trim();
+            const key2 = document.getElementById('apiKeyGroq').value.trim();
+            if (key1 || key2) {
+                try {
+                    if (key1) sessionStorage.setItem('gdf_gemini_api_key', key1); else sessionStorage.removeItem('gdf_gemini_api_key');
+                    if (key2) sessionStorage.setItem('gdf_groq_api_key', key2); else sessionStorage.removeItem('gdf_groq_api_key');
+                } catch (_) { alert('Salvataggio della sessione non disponibile: le chiavi restano nei campi finché la pagina è aperta.'); return; }
+                alert('Chiavi salvate solo per questa sessione del browser.' + (key2 ? ' Groq verrà usato come riserva se Gemini non risponde (quota, sovraccarico o errore): in quel caso il testo dell\u2019analisi viene inviato anche a Groq, senza ricerca web e senza allegati.' : ''));
             } else {
-                try { sessionStorage.removeItem('gdf_gemini_api_key'); localStorage.removeItem('gdf_gemini_api_key'); } catch (_) {}
-                alert('API Key rimossa.');
+                try { sessionStorage.removeItem('gdf_gemini_api_key'); sessionStorage.removeItem('gdf_groq_api_key'); localStorage.removeItem('gdf_gemini_api_key'); } catch (_) {}
+                alert('API Key rimosse.');
             }
         }
 
@@ -5152,6 +5161,29 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
         }
     }
 
+    // ---- Riserva Groq (piano gratuito): converte la richiesta Gemini in formato OpenAI e la risposta in formato Gemini ----
+    const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    const GROQ_MODEL = 'llama-3.3-70b-versatile';
+    const jsonResp = (obj, status) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
+    async function callGroq(body, groqKey, signal) {
+        let payload; try { payload = JSON.parse(body); } catch (e) { return jsonResp({ error: { message: 'Richiesta non valida per Groq.' } }, 400); }
+        const messages = [];
+        const sys = ((payload.systemInstruction && payload.systemInstruction.parts) || []).map(p => p.text || '').join('\n');
+        if (sys) messages.push({ role: 'system', content: sys });
+        for (const c of (payload.contents || [])) {
+            const text = (c.parts || []).map(p => typeof p.text === 'string' ? p.text : (p.inlineData ? '[Allegato non inviato a Groq: servizio solo testo]' : '')).filter(Boolean).join('\n\n');
+            messages.push({ role: c.role === 'model' ? 'assistant' : 'user', content: text || ' ' });
+        }
+        const gc = payload.generationConfig || {};
+        const req = { model: GROQ_MODEL, messages, temperature: typeof gc.temperature === 'number' ? gc.temperature : 0.3 };
+        if (gc.responseMimeType === 'application/json') req.response_format = { type: 'json_object' };
+        const r = await nativeFetch(GROQ_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + groqKey }, signal, body: JSON.stringify(req) });
+        const txt = await r.text(); let d; try { d = JSON.parse(txt); } catch (e) { d = { error: { message: txt.slice(0, 300) } }; }
+        if (!r.ok) return jsonResp({ error: { message: 'Groq: ' + ((d.error && d.error.message) || 'errore') } }, r.status);
+        const text = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
+        return jsonResp({ candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason: 'STOP' }] }, 200);
+    }
+
     window.fetch = async function (input, init) {
         const url = typeof input === 'string' ? input : ((input && input.url) || '');
         if (!url.includes(GEMINI_HOST) || !init || typeof init.body !== 'string') return nativeFetch(input, init);
@@ -5179,7 +5211,25 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
                 }
             }
         }
-        return restoreResponse(await fetchWithRetry(input, Object.assign({}, init, { body })));
+        const geminiKey = readGeminiKey('apiKeyInput', 'gdf_gemini_api_key');
+        const groqKey = getGroqApiKey();
+        if (!geminiKey && groqKey) {
+            toast('Nessuna chiave Gemini: uso Groq (senza ricerca web).', 4000);
+            return restoreResponse(await callGroq(body, groqKey, init.signal));
+        }
+        const opts = Object.assign({}, init, { body, headers: Object.assign({}, init.headers, { 'x-goog-api-key': geminiKey || (init.headers && init.headers['x-goog-api-key']) }) });
+        const res = await fetchWithRetry(input, opts);
+        if (groqKey && !res.ok) {
+            const hasTools = !!(payload && payload.tools);
+            const soft = [429, 500, 503, 403].includes(res.status);
+            const hard = [400, 404].includes(res.status) && !hasTools;   // con la ricerca web, 400 viene prima riprovato senza ricerca
+            if (soft || hard) {
+                toast('Gemini ha risposto ' + res.status + ': uso Groq come riserva (senza ricerca web).', 5000);
+                const g = await callGroq(body, groqKey, init.signal);
+                if (g.ok) return restoreResponse(g);
+            }
+        }
+        return restoreResponse(res);
     };
 
     // Cancella tutti i dati locali di questo sito (solo chiavi/archivi di eco-nomy)
@@ -5204,9 +5254,10 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
     function resetIdle() {
         clearTimeout(idle);
         idle = setTimeout(() => {
-            try { sessionStorage.removeItem('gdf_gemini_api_key'); } catch (e) {}
-            const k = document.getElementById('apiKeyInput');
-            if (k && k.value) { k.value = ''; toast('Chiave API rimossa per inattivit\u00e0 (30 minuti).', 6000); }
+            try { sessionStorage.removeItem('gdf_gemini_api_key'); sessionStorage.removeItem('gdf_groq_api_key'); } catch (e) {}
+            const k = document.getElementById('apiKeyInput'), k2 = document.getElementById('apiKeyGroq');
+            if (k2 && k2.value) k2.value = '';
+            if (k && k.value) { k.value = ''; toast('Chiavi API rimosse per inattivit\u00e0 (30 minuti).', 6000); }
         }, 30 * 60 * 1000);
     }
     ['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => window.addEventListener(ev, resetIdle, { passive: true }));
@@ -5551,7 +5602,7 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 /* Strumenti operativi: risultati separati dal report, archiviati nel workflow del caso. */
 (function(){'use strict';
  const $=id=>document.getElementById(id), E=(tag,text='')=>{const n=document.createElement(tag);n.textContent=text;return n;};
- const labels={interview:'Sommarie Informazioni',documents:'Documenti da acquisire o verificare',blind:'Revisione indipendente',lesson:'Preparazione della lezione',numbers:'Controllo dei numeri'};
+ const labels={interview:'Sommarie informazioni',documents:'Documenti da acquisire o verificare',blind:'Revisione indipendente',lesson:'Preparazione della lezione',numbers:'Controllo dei numeri'};
  const host=E('details');host.id='ecoPractice';host.className='no-print';
  host.innerHTML=`<summary>Cinque strumenti operativi e didattici</summary>
  <p>Il controllo numerico funziona anche prima dell’analisi. Per gli strumenti AI genera o riapri un caso nel Modulo 02. Le proposte sono modificabili e restano separate dal report principale. Salva una versione del fascicolo per conservarle; il backup comprende anche questi elaborati.</p>
