@@ -5551,11 +5551,11 @@ document.addEventListener('keydown',e=>{if($('kbOverlay').hidden)return;if(e.key
 /* Strumenti operativi: risultati separati dal report, archiviati nel workflow del caso. */
 (function(){'use strict';
  const $=id=>document.getElementById(id), E=(tag,text='')=>{const n=document.createElement(tag);n.textContent=text;return n;};
- const labels={interview:'Domande per sentire una persona',documents:'Documenti da acquisire o verificare',blind:'Revisione indipendente',lesson:'Preparazione della lezione',numbers:'Controllo dei numeri'};
+ const labels={interview:'Sommarie Informazioni',documents:'Documenti da acquisire o verificare',blind:'Revisione indipendente',lesson:'Preparazione della lezione',numbers:'Controllo dei numeri'};
  const host=E('details');host.id='ecoPractice';host.className='no-print';
  host.innerHTML=`<summary>Cinque strumenti operativi e didattici</summary>
  <p>Il controllo numerico funziona anche prima dell’analisi. Per gli strumenti AI genera o riapri un caso nel Modulo 02. Le proposte sono modificabili e restano separate dal report principale. Salva una versione del fascicolo per conservarle; il backup comprende anche questi elaborati.</p>
- <details><summary>1 · Domande per sentire una persona</summary>
+ <details><summary>1 · Sommarie informazioni</summary>
  <label>Ruolo anonimo e obiettivo<input id="epInterviewFocus" maxlength="1200" placeholder="Es. Soggetto A, chiarire prestazioni e pagamenti"></label>
  <button type="button" data-ep-run="interview">Prepara traccia con AI</button>
  <label>Traccia modificabile<textarea id="epInterviewResult" class="ep-result" maxlength="40000"></textarea></label><p id="epInterviewStatus" class="ep-status" role="status"></p><button type="button" data-ep-export="interview">Esporta traccia TXT</button></details>
