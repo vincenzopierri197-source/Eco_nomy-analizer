@@ -1,6 +1,27 @@
 {
-  "aggiornato": "2026-10-21",
+  "aggiornato": "2026-10-22",
   "voci": [
+    {
+      "data": "2026-10-21",
+      "tipo": "Notizia",
+      "titolo": "AUTORITA' NAZIONALE ANTICORRUZIONE - COMUNICATO",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/21/26A05505/SG"
+    },
+    {
+      "data": "2026-10-21",
+      "tipo": "Notizia",
+      "titolo": "Forum Coldiretti 2026, videomessaggio del Presidente Meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/forum-coldiretti-2026-videomessaggio-del-presidente-meloni/32889"
+    },
+    {
+      "data": "2026-10-21",
+      "tipo": "Notizia",
+      "titolo": "President Meloni’s video message on urgent public security measures",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/node/32888"
+    },
     {
       "data": "2026-10-20",
       "tipo": "Notizia",
