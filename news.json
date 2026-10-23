@@ -1,6 +1,27 @@
 {
-  "aggiornato": "2026-10-22",
+  "aggiornato": "2026-10-23",
   "voci": [
+    {
+      "data": "2026-10-23",
+      "tipo": "Notizia",
+      "titolo": "ECAD, l'intervento del Presidente Meloni a San Patrignano",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/ecad-lintervento-del-presidente-meloni-san-patrignano/32920"
+    },
+    {
+      "data": "2026-10-23",
+      "tipo": "Notizia",
+      "titolo": "Agreement with road haulage associations: President Meloni’s video message",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/node/32916"
+    },
+    {
+      "data": "2026-10-22",
+      "tipo": "Notizia",
+      "titolo": "Comunicato stampa del Consiglio dei Ministri n. 194",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/comunicato-stampa-del-consiglio-dei-ministri-n-194/32912"
+    },
     {
       "data": "2026-10-21",
       "tipo": "Notizia",
