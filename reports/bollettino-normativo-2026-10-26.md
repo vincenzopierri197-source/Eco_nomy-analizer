@@ -104,4 +104,4 @@ Questa selezione riassume i principali atti recenti individuati nelle fonti uffi
 
 ---
 
-**Edizione audio:** il file di lettura integrale è disponibile in `reports/bollettino-normativo-2026-10-26-audio.txt`; il workflow dedicato prepara e invia su Telegram audio MP3, bollettino completo e testo.
+**Edizione audio:** il file di lettura integrale è disponibile in `reports/bollettino-normativo-2026-10-26-audio.txt`; il workflow dedicato prepara e invia su Telegram il file MP3, il bollettino completo e il testo della lettura.
