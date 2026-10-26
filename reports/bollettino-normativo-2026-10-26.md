@@ -101,3 +101,7 @@ Questa selezione riassume i principali atti recenti individuati nelle fonti uffi
 4. Seguire la conversione dei D.L. n. 193/2026 e n. 190/2026 e l’iter della proposta C. 2904.
 
 **Nota:** sintesi informativa, non esaustiva e non sostitutiva della consultazione dei testi integrali e aggiornati. Non costituisce consulenza legale personalizzata.
+
+---
+
+**Edizione audio:** il file di lettura integrale è disponibile in `reports/bollettino-normativo-2026-10-26-audio.txt`; il workflow dedicato prepara e invia su Telegram audio MP3, bollettino completo e testo.
