@@ -49,7 +49,7 @@ jobs:
 
       - name: Invia bollettino, testo e audio su Telegram
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           REPORT_PATH: ${{ steps.audio.outputs.report }}
           AUDIO_TEXT_PATH: ${{ steps.audio.outputs.audio_text }}
