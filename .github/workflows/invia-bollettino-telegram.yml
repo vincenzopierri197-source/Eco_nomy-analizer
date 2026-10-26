@@ -1,0 +1,57 @@
+name: Invia bollettino normativo su Telegram
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'reports/bollettino-normativo-*.md'
+
+permissions:
+  contents: read
+
+jobs:
+  invia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Recupera il repository
+        uses: actions/checkout@v6
+
+      - name: Installa strumenti audio
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng ffmpeg
+
+      - name: Individua il bollettino e genera l'audio
+        id: audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -E '^reports/bollettino-normativo-[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$' | head -n 1 || true)"
+          if [ -z "$report" ]; then
+            echo "::error::Nessun report normativo modificato nel commit."
+            exit 1
+          fi
+          stem="${report%.md}"
+          audio_text="${stem}-audio.txt"
+          if [ ! -f "$report" ] || [ ! -f "$audio_text" ]; then
+            echo "::error::Report o testo audio mancante: $report / $audio_text"
+            exit 1
+          fi
+          audio_mp3="$RUNNER_TEMP/$(basename "$stem").mp3"
+          espeak-ng -v it -s 145 -p 48 -a 175 -f "$audio_text" -w "$RUNNER_TEMP/bollettino.wav"
+          ffmpeg -hide_banner -loglevel error -y -i "$RUNNER_TEMP/bollettino.wav" -codec:a libmp3lame -q:a 4 "$audio_mp3"
+          echo "report=$report" >> "$GITHUB_OUTPUT"
+          echo "audio_text=$audio_text" >> "$GITHUB_OUTPUT"
+          echo "audio_mp3=$audio_mp3" >> "$GITHUB_OUTPUT"
+          ls -lh "$audio_mp3"
+
+      - name: Invia bollettino, testo e audio su Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPORT_PATH: ${{ steps.audio.outputs.report }}
+          AUDIO_TEXT_PATH: ${{ steps.audio.outputs.audio_text }}
+          AUDIO_MP3_PATH: ${{ steps.audio.outputs.audio_mp3 }}
+        run: python3 scripts/send_bollettino_telegram.py
