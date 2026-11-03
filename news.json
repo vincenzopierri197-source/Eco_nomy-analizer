@@ -1,6 +1,20 @@
 {
-  "aggiornato": "2026-11-02",
+  "aggiornato": "2026-11-03",
   "voci": [
+    {
+      "data": "2026-11-03",
+      "tipo": "Notizia",
+      "titolo": "Attacchi hacker in Europa ai sistemi di refrigerazione commerciale, nota di Palazzo Chigi",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/attacchi-hacker-europa-ad-alcuni-sistemi-di-refrigerazione-commerciale-nota-di-palazzo"
+    },
+    {
+      "data": "2026-11-03",
+      "tipo": "Notizia",
+      "titolo": "President Meloni pays tribute to the victims of the helicopter crash in Bosnia and Herzegovina",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/node/33005"
+    },
     {
       "data": "2026-11-02",
       "tipo": "Notizia",
@@ -14,6 +28,13 @@
       "titolo": "Operazione della Polizia di Stato contro la criminalità giovanile, dichiarazione del Presidente Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/operazione-della-polizia-di-stato-contro-la-criminalit-giovanile-dichiarazione-del"
+    },
+    {
+      "data": "2026-11-02",
+      "tipo": "Notizia",
+      "titolo": "MINISTERO DELLE INFRASTRUTTURE E DEI TRASPORTI - DECRETO 31 agosto 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/02/26A05717/SG"
     },
     {
       "data": "2026-10-30",
