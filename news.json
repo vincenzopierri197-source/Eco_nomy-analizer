@@ -1,6 +1,13 @@
 {
-  "aggiornato": "2026-11-03",
+  "aggiornato": "2026-11-04",
   "voci": [
+    {
+      "data": "2026-11-04",
+      "tipo": "Notizia",
+      "titolo": "Rinuncia della Svizzera al rimborso delle spese mediche dei feriti di Crans-Montana, la dichiarazione del Presidente Meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/rinuncia-della-svizzera-al-rimborso-delle-spese-mediche-dei-feriti-di-crans-montana-la"
+    },
     {
       "data": "2026-11-03",
       "tipo": "Notizia",
@@ -14,6 +21,20 @@
       "titolo": "President Meloni pays tribute to the victims of the helicopter crash in Bosnia and Herzegovina",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/node/33005"
+    },
+    {
+      "data": "2026-11-03",
+      "tipo": "Notizia",
+      "titolo": "CELEX:32026D2482: Council Implementing Decision (EU) 2026/2482 of 29 October 2026 amending Implementing Decision (EU) 2018/485 as regards an extension of the authorisation for Denmark to apply a speci",
+      "fonte": "EUR-Lex - Legislazione Parlamento e Consiglio",
+      "url": "https://eur-lex.europa.eu/./legal-content/AUTO/?uri=CELEX:32026D2482"
+    },
+    {
+      "data": "2026-11-03",
+      "tipo": "Notizia",
+      "titolo": "MINISTERO DELL'ECONOMIA E DELLE FINANZE - DECRETO 23 ottobre 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/03/26A05736/SG"
     },
     {
       "data": "2026-11-02",
