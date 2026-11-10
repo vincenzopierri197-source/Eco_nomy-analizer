@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-11-09",
+  "aggiornato": "2026-11-10",
   "voci": [
     {
       "data": "2026-11-09",
@@ -7,6 +7,27 @@
       "titolo": "Giorno della Libertà, dichiarazione del Presidente Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/giorno-della-libert-dichiarazione-del-presidente-meloni/33061"
+    },
+    {
+      "data": "2026-11-09",
+      "tipo": "Notizia",
+      "titolo": "Comunicato stampa del Consiglio dei Ministri n. 197",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/comunicato-stampa-del-consiglio-dei-ministri-n-197/33070"
+    },
+    {
+      "data": "2026-11-09",
+      "tipo": "Notizia",
+      "titolo": "Decreto Bollette, dichiarazione del Presidente Meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/decreto-bollette-dichiarazione-del-presidente-meloni/33069"
+    },
+    {
+      "data": "2026-11-09",
+      "tipo": "Notizia",
+      "titolo": "Consiglio dei Ministri n. 197",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/consiglio-dei-ministri-n-197/33065"
     },
     {
       "data": "2026-11-07",
@@ -329,13 +350,6 @@
       "titolo": "Campagna di comunicazione istituzionale “Concordato preventivo biennale 2026 – 2027”",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/media/campagna-di-comunicazione-istituzionale-concordato-preventivo-biennale-2026-2027/32845"
-    },
-    {
-      "data": "2026-10-14",
-      "tipo": "Notizia",
-      "titolo": "Aperti - Confesercenti Forum 2026, il videomessaggio del Presidente Meloni",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/aperti-confesercenti-forum-2026-il-videomessaggio-del-presidente-meloni/32843"
     }
   ]
 }
