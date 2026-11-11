@@ -1,6 +1,20 @@
 {
-  "aggiornato": "2026-11-10",
+  "aggiornato": "2026-11-11",
   "voci": [
+    {
+      "data": "2026-11-10",
+      "tipo": "Notizia",
+      "titolo": "DECRETO DEL PRESIDENTE DEL CONSIGLIO DEI MINISTRI 3 novembre 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/10/26A05968/SG"
+    },
+    {
+      "data": "2026-11-10",
+      "tipo": "Notizia",
+      "titolo": "XXII edizione del Premio Giacomo Matteotti, la cerimonia di premiazione",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/media/xxii-edizione-del-premio-giacomo-matteotti-la-cerimonia-di-premiazione/33076"
+    },
     {
       "data": "2026-11-09",
       "tipo": "Notizia",
@@ -336,20 +350,6 @@
       "titolo": "MINISTERO DELL'AGRICOLTURA, DELLA SOVRANITA' ALIMENTARE E DELLE FORESTE - DECRETO 7 ottobre 2026",
       "fonte": "Gazzetta Ufficiale - Serie Generale",
       "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/15/26A05407/SG"
-    },
-    {
-      "data": "2026-10-15",
-      "tipo": "Notizia",
-      "titolo": "DECRETO DEL PRESIDENTE DEL CONSIGLIO DEI MINISTRI 1 ottobre 2026",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/15/26A05400/SG"
-    },
-    {
-      "data": "2026-10-14",
-      "tipo": "Notizia",
-      "titolo": "Campagna di comunicazione istituzionale “Concordato preventivo biennale 2026 – 2027”",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/media/campagna-di-comunicazione-istituzionale-concordato-preventivo-biennale-2026-2027/32845"
     }
   ]
 }
