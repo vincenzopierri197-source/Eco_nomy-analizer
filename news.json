@@ -1,6 +1,27 @@
 {
-  "aggiornato": "2026-11-11",
+  "aggiornato": "2026-11-12",
   "voci": [
+    {
+      "data": "2026-11-12",
+      "tipo": "Notizia",
+      "titolo": "Lavoro, la dichiarazione del Presidente Meloni sull'intesa raggiunta tra le parti sociali",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/lavoro-la-dichiarazione-del-presidente-meloni-sullintesa-raggiunta-tra-le-parti-sociali"
+    },
+    {
+      "data": "2026-11-11",
+      "tipo": "Notizia",
+      "titolo": "LEGGE 29 ottobre 2026, n.204",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/11/26G00220/SG"
+    },
+    {
+      "data": "2026-11-11",
+      "tipo": "Notizia",
+      "titolo": "AGENZIA DELLE ENTRATE - PROVVEDIMENTO 3 novembre 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/11/26A05859/SG"
+    },
     {
       "data": "2026-11-10",
       "tipo": "Notizia",
@@ -329,27 +350,6 @@
       "titolo": "President Meloni’s address to the Senate ahead of the European Council meeting on 15-16 October",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/node/32864"
-    },
-    {
-      "data": "2026-10-15",
-      "tipo": "Notizia",
-      "titolo": "Dichiarazione comune adottata dai 17 Leader \"Amici della coesione\"",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/dichiarazione-comune-adottata-dai-17-leader-amici-della-coesione/32852"
-    },
-    {
-      "data": "2026-10-15",
-      "tipo": "Notizia",
-      "titolo": "Consiglio europeo del 15 e 16 ottobre",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/consiglio-europeo-del-15-e-16-ottobre/32851"
-    },
-    {
-      "data": "2026-10-15",
-      "tipo": "Notizia",
-      "titolo": "MINISTERO DELL'AGRICOLTURA, DELLA SOVRANITA' ALIMENTARE E DELLE FORESTE - DECRETO 7 ottobre 2026",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/15/26A05407/SG"
     }
   ]
 }
