@@ -1,12 +1,40 @@
 {
-  "aggiornato": "2026-11-12",
+  "aggiornato": "2026-11-13",
   "voci": [
+    {
+      "data": "2026-11-13",
+      "tipo": "Notizia",
+      "titolo": "Dichiarazione congiunta sul contrasto all’immigrazione irregolare",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/dichiarazione-congiunta-sul-contrasto-all-immigrazione-illegale/33107"
+    },
     {
       "data": "2026-11-12",
       "tipo": "Notizia",
       "titolo": "Lavoro, la dichiarazione del Presidente Meloni sull'intesa raggiunta tra le parti sociali",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/lavoro-la-dichiarazione-del-presidente-meloni-sullintesa-raggiunta-tra-le-parti-sociali"
+    },
+    {
+      "data": "2026-11-12",
+      "tipo": "Notizia",
+      "titolo": "CELEX:32026R1979: Commission Delegated Regulation (EU) 2026/1979 of 8 September 2026 amending Regulation (EU) No 965/2012 as regards the flight and duty time limitations and rest requirements for air",
+      "fonte": "EUR-Lex - Gazzetta ufficiale UE, serie L",
+      "url": "https://eur-lex.europa.eu/./legal-content/AUTO/?uri=CELEX:32026R1979"
+    },
+    {
+      "data": "2026-11-12",
+      "tipo": "Notizia",
+      "titolo": "MINISTERO DELL'ECONOMIA E DELLE FINANZE - DECRETO 2 novembre 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/12/26A05875/SG"
+    },
+    {
+      "data": "2026-11-12",
+      "tipo": "Notizia",
+      "titolo": "Riunione della Coalizione europea contro le droghe",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/riunione-della-coalizione-europea-contro-le-droghe/33102"
     },
     {
       "data": "2026-11-11",
@@ -322,34 +350,6 @@
       "titolo": "Consiglio europeo del 15 e 16 ottobre, il punto stampa del Presidente Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/consiglio-europeo-del-15-e-16-ottobre-il-punto-stampa-del-presidente-meloni/32870"
-    },
-    {
-      "data": "2026-10-16",
-      "tipo": "Notizia",
-      "titolo": "DECRETO LEGISLATIVO 25 settembre 2026, n.186",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/16/26G00203/SG"
-    },
-    {
-      "data": "2026-10-16",
-      "tipo": "Notizia",
-      "titolo": "ISTITUTO PER LA VIGILANZA SULLE ASSICURAZIONI - COMUNICATO",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/16/26A05417/SG"
-    },
-    {
-      "data": "2026-10-16",
-      "tipo": "Notizia",
-      "titolo": "Messaggio del Presidente del Consiglio, Giorgia Meloni, alla Fondazione Bellisario",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/messaggio-del-presidente-del-consiglio-giorgia-meloni-alla-fondazione-bellisario/32865"
-    },
-    {
-      "data": "2026-10-16",
-      "tipo": "Notizia",
-      "titolo": "President Meloni’s address to the Senate ahead of the European Council meeting on 15-16 October",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/node/32864"
     }
   ]
 }
