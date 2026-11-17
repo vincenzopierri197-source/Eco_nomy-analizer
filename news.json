@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-11-16",
+  "aggiornato": "2026-11-17",
   "voci": [
     {
       "data": "2026-11-16",
@@ -7,6 +7,20 @@
       "titolo": "Giornata europea in memoria delle vittime degli incidenti sul lavoro, dichiarazione del Presidente Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/giornata-europea-memoria-delle-vittime-degli-incidenti-sul-lavoro-dichiarazione-del"
+    },
+    {
+      "data": "2026-11-16",
+      "tipo": "Notizia",
+      "titolo": "LEGGE 13 novembre 2026, n.209",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/16/26G00226/SG"
+    },
+    {
+      "data": "2026-11-16",
+      "tipo": "Notizia",
+      "titolo": "TESTO COORDINATO DEL DECRETO-LEGGE 17 settembre 2026, n.162",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/16/26A06055/SG"
     },
     {
       "data": "2026-11-15",
@@ -336,20 +350,6 @@
       "titolo": "Disposizioni urgenti in materia di sicurezza pubblica, il videomessaggio del Presidente Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/disposizioni-urgenti-materia-di-sicurezza-pubblica-il-videomessaggio-del-presidente-meloni"
-    },
-    {
-      "data": "2026-10-20",
-      "tipo": "Notizia",
-      "titolo": "DECRETO LEGISLATIVO 8 ottobre 2026, n.188",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/20/26G00205/SG"
-    },
-    {
-      "data": "2026-10-20",
-      "tipo": "Notizia",
-      "titolo": "MINISTERO DELL'AGRICOLTURA, DELLA SOVRANITA' ALIMENTARE E DELLE FORESTE - DECRETO 12 ottobre 2026",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/20/26A05468/SG"
     }
   ]
 }
