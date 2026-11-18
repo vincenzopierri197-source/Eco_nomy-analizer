@@ -1,6 +1,13 @@
 {
-  "aggiornato": "2026-11-17",
+  "aggiornato": "2026-11-18",
   "voci": [
+    {
+      "data": "2026-11-17",
+      "tipo": "Notizia",
+      "titolo": "Riunione del CIPESS del 17 novembre 2026",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/riunione-del-cipess-del-17-novembre-2026/33139"
+    },
     {
       "data": "2026-11-16",
       "tipo": "Notizia",
@@ -343,13 +350,6 @@
       "titolo": "Comunicato stampa del Consiglio dei Ministri n. 193",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/comunicato-stampa-del-consiglio-dei-ministri-n-193/32884"
-    },
-    {
-      "data": "2026-10-20",
-      "tipo": "Notizia",
-      "titolo": "Disposizioni urgenti in materia di sicurezza pubblica, il videomessaggio del Presidente Meloni",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/disposizioni-urgenti-materia-di-sicurezza-pubblica-il-videomessaggio-del-presidente-meloni"
     }
   ]
 }
