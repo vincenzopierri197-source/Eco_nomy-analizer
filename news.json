@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-11-23",
+  "aggiornato": "2026-11-24",
   "voci": [
     {
       "data": "2026-11-23",
@@ -7,6 +7,13 @@
       "titolo": "Statement by President Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/node/33171"
+    },
+    {
+      "data": "2026-11-23",
+      "tipo": "Notizia",
+      "titolo": "AGENZIA ITALIANA DEL FARMACO - DETERMINA 17 novembre 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/23/26A06169/SG"
     },
     {
       "data": "2026-11-21",
@@ -343,13 +350,6 @@
       "titolo": "Comunicato stampa del Consiglio dei Ministri n. 194",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/comunicato-stampa-del-consiglio-dei-ministri-n-194/32912"
-    },
-    {
-      "data": "2026-10-21",
-      "tipo": "Notizia",
-      "titolo": "AUTORITA' NAZIONALE ANTICORRUZIONE - COMUNICATO",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/21/26A05505/SG"
     }
   ]
 }
