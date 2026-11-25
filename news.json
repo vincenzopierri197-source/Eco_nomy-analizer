@@ -1,6 +1,20 @@
 {
-  "aggiornato": "2026-11-24",
+  "aggiornato": "2026-11-25",
   "voci": [
+    {
+      "data": "2026-11-25",
+      "tipo": "Notizia",
+      "titolo": "Giornata internazionale per l'eliminazione della violenza contro le donne, dichiarazione del Presidente Meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/giornata-internazionale-leliminazione-della-violenza-contro-le-donne-dichiarazione-del-0"
+    },
+    {
+      "data": "2026-11-24",
+      "tipo": "Notizia",
+      "titolo": "AUTORITA' NAZIONALE ANTICORRUZIONE - COMUNICATO",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/24/26A06098/SG"
+    },
     {
       "data": "2026-11-23",
       "tipo": "Notizia",
@@ -336,20 +350,6 @@
       "titolo": "LEGGE 13 ottobre 2026, n.192",
       "fonte": "Gazzetta Ufficiale - Serie Generale",
       "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/23/26G00209/SG"
-    },
-    {
-      "data": "2026-10-23",
-      "tipo": "Notizia",
-      "titolo": "ECAD, Incontro internazionale sulla prevenzione e il recupero dalle dipendenze, le conclusioni del Sottosegretario Mantovano",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/ecad-incontro-internazionale-sulla-prevenzione-e-il-recupero-dalle-dipendenze-le"
-    },
-    {
-      "data": "2026-10-22",
-      "tipo": "Notizia",
-      "titolo": "Comunicato stampa del Consiglio dei Ministri n. 194",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/comunicato-stampa-del-consiglio-dei-ministri-n-194/32912"
     }
   ]
 }
