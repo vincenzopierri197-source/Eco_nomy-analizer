@@ -1,6 +1,20 @@
 {
-  "aggiornato": "2026-11-25",
+  "aggiornato": "2026-11-26",
   "voci": [
+    {
+      "data": "2026-11-26",
+      "tipo": "Notizia",
+      "titolo": "Consiglio europeo straordinario, il punto stampa del Presidente meloni",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/articolo/consiglio-europeo-straordinario-il-punto-stampa-del-presidente-meloni/33197"
+    },
+    {
+      "data": "2026-11-26",
+      "tipo": "Notizia",
+      "titolo": "Ultimi progetti di legge annunciati in data 26 novembre 2026",
+      "fonte": "Camera - Disegni di legge annunciati",
+      "url": "https://www.camera.it/leg19/141?tab=2"
+    },
     {
       "data": "2026-11-25",
       "tipo": "Notizia",
@@ -336,20 +350,6 @@
       "titolo": "ECAD, l'intervento del Presidente Meloni a San Patrignano",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/ecad-lintervento-del-presidente-meloni-san-patrignano/32920"
-    },
-    {
-      "data": "2026-10-23",
-      "tipo": "Notizia",
-      "titolo": "Agreement with road haulage associations: President Meloni’s video message",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/node/32916"
-    },
-    {
-      "data": "2026-10-23",
-      "tipo": "Notizia",
-      "titolo": "LEGGE 13 ottobre 2026, n.192",
-      "fonte": "Gazzetta Ufficiale - Serie Generale",
-      "url": "http://www.gazzettaufficiale.it/eli/id/2026/10/23/26G00209/SG"
     }
   ]
 }
