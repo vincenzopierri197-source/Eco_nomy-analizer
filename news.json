@@ -1,6 +1,13 @@
 {
-  "aggiornato": "2026-11-26",
+  "aggiornato": "2026-11-27",
   "voci": [
+    {
+      "data": "2026-11-27",
+      "tipo": "Notizia",
+      "titolo": "Recupero dei detenuti tossicodipendenti, insediata a Palazzo Chigi la Commissione centrale per le linee guida",
+      "fonte": "Governo italiano",
+      "url": "https://www.governo.it/it/media/recupero-dei-detenuti-tossicodipendenti-insediata-palazzo-chigi-la-commissione-centrale-le"
+    },
     {
       "data": "2026-11-26",
       "tipo": "Notizia",
@@ -14,6 +21,13 @@
       "titolo": "Ultimi progetti di legge annunciati in data 26 novembre 2026",
       "fonte": "Camera - Disegni di legge annunciati",
       "url": "https://www.camera.it/leg19/141?tab=2"
+    },
+    {
+      "data": "2026-11-26",
+      "tipo": "Notizia",
+      "titolo": "MINISTERO DELL'ECONOMIA E DELLE FINANZE - DECRETO 13 novembre 2026",
+      "fonte": "Gazzetta Ufficiale - Serie Generale",
+      "url": "http://www.gazzettaufficiale.it/eli/id/2026/11/26/26A06163/SG"
     },
     {
       "data": "2026-11-25",
@@ -336,20 +350,6 @@
       "titolo": "Dichiarazione del Presidente del Consiglio, Giorgia Meloni",
       "fonte": "Governo italiano",
       "url": "https://www.governo.it/it/articolo/dichiarazione-del-presidente-del-consiglio-giorgia-meloni/32939"
-    },
-    {
-      "data": "2026-10-26",
-      "tipo": "Notizia",
-      "titolo": "ECAD: President Meloni’s opening address at the High-Level International Meeting on Addiction Prevention and Recovery at San Patrignano",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/node/32935"
-    },
-    {
-      "data": "2026-10-23",
-      "tipo": "Notizia",
-      "titolo": "ECAD, l'intervento del Presidente Meloni a San Patrignano",
-      "fonte": "Governo italiano",
-      "url": "https://www.governo.it/it/articolo/ecad-lintervento-del-presidente-meloni-san-patrignano/32920"
     }
   ]
 }
